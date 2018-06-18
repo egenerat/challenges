@@ -43,7 +43,7 @@ public class Graph {
                 return distances.get(current);
             }
             // set current
-            current = unvisitedVertex.
+//            current = unvisitedVertex.
         }
         return -1;
     }
