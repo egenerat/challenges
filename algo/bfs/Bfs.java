@@ -2,6 +2,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;;
 
 public class Bfs {
 
@@ -48,7 +49,11 @@ public class Bfs {
       StringBuilder sb = new StringBuilder();
       nodes.forEach((k, v) -> {
         sb.append(k).append(" => ");
-        v.getNeighbours().forEach(x -> sb.append(x.getId()).append(", "));
+        sb.append(v.getNeighbours().stream()
+          .map(Node::getId)
+          .map(Object::toString)
+          .collect(Collectors.joining(", "))
+        );
         sb.append("\n");
       });
       return sb.toString();
