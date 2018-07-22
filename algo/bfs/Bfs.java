@@ -1,8 +1,5 @@
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Bfs {
 
@@ -28,6 +25,10 @@ public class Bfs {
 
       public List<Node> getNeighbours() {
         return neighbours;
+      }
+
+      public String toString() {
+        return "Node: " + id;
       }
     }
 
@@ -58,6 +59,43 @@ public class Bfs {
       });
       return sb.toString();
     }
+
+    public List<Integer> shortestPath(int nodeStart, int nodeTarget) {
+      Queue<Node> queue = new LinkedList<>();
+      Set<Node> visitedNodes = new HashSet<>();
+      Node root = getNode(nodeStart);
+      Map<Node, Node> pathToNodes = new HashMap<>();
+
+      visitedNodes.add(root);
+      queue.add(root);
+      List<Integer> result = null;
+      Node subtreeRoot;
+      while (result == null && (subtreeRoot = queue.poll()) != null) {
+        for (Node neighbour: subtreeRoot.neighbours) {
+          if (neighbour.id == nodeTarget) {
+            pathToNodes.put(neighbour, subtreeRoot);
+            result = buildPath(pathToNodes, neighbour);
+          }
+          if (!visitedNodes.contains(neighbour)) {
+            pathToNodes.put(neighbour, subtreeRoot);
+            queue.add(neighbour);
+            visitedNodes.add(neighbour);
+          }
+        }
+      }
+      return result;
+    }
+
+    private List<Integer> buildPath(Map<Node, Node> paths, Node end) {
+      List<Integer> result = new Stack<>();
+      Node current = end;
+      result.add(end.getId());
+
+      while ((current = paths.get(current)) != null) {
+        result.add(0, current.getId());
+      }
+      return result;
+    }
   }
 
   public static void main(String... args) {
@@ -68,5 +106,6 @@ public class Bfs {
     g.addEdge(1, 3);
     g.addEdge(3, 5);
     System.out.println(g.prettyPrint());
+    System.out.println(g.shortestPath(1, 5));
   }
 }
