@@ -3,10 +3,14 @@ import sys
 
 class Player:
     def __init__(self, r, c):
+        # To keep a state of the map, persistent over turns
         self.visited = [[False for i in range(c)] for j in range(r)]
         self.control_room = None
         self.reached_control_room = False
         self.path = []
+        self.maze = None
+        self.kr = None
+        self.kc = None
 
     def set_round_data(self, maze, kr, kc):
         self.maze = maze
@@ -17,8 +21,10 @@ class Player:
         # Check if the control_room is now visible
         if not self.control_room:
             self.control_room = p.get_control_room()
+        # Check if we have reached the control room
         if (self.kr, self.kc) == self.control_room:
             self.reached_control_room = True
+        # Append current position to path
         if not self.reached_control_room:
             self.path.append((kr, kc))
             print(self.path, file=sys.stderr)
@@ -33,40 +39,39 @@ class Player:
                 return idx, row.index('C')
 
     def get_available_moves(self):
-        # result = []
         if self.kr > 0:
             neighbour = self.maze[self.kr - 1][self.kc]
             if neighbour != '#' and not self.visited[self.kr - 1][self.kc]:
-                # result.append((kr - 1, kc), neighbour)
                 return "UP"
         if kc < c - 1:
-            neighbour = maze[kr][kc + 1]
+            neighbour = self.maze[kr][kc + 1]
             if neighbour != '#' and not self.visited[self.kr][self.kc + 1]:
-                # result.append((kr, kc + 1), neighbour)
                 return "RIGHT"
         if kr < r - 1:
-            neighbour = maze[self.kr + 1][self.kc]
+            neighbour = self.maze[self.kr + 1][self.kc]
             if neighbour != '#' and not self.visited[self.kr + 1][self.kc]:
-                # result.append((kr + 1, kc), neighbour)
                 return "DOWN"
         if kc > 0:
-            neighbour = maze[kr][kc - 1]
+            neighbour = self.maze[kr][kc - 1]
             if neighbour != '#' and not self.visited[self.kr][self.kc - 1]:
-                # result.append((kr, kc - 1), neighbour)
                 return "LEFT"
 
     def get_next_move(self):
         if not self.reached_control_room:
             next_move = p.get_available_moves()
+            if not next_move:
+                # We remove the current position from the path
+                self.path.pop()
+                # We come back to the previous position
+                next_move = get_move_string(self.kr, self.kc, *self.path.pop())
         else:
             next_r, next_c = self.path.pop()
-            next_move = get_move_return(self.kr, self.kc, next_r, next_c)
-            print("{}".format(next_move), file=sys.stderr)
+            next_move = get_move_string(self.kr, self.kc, next_r, next_c)
         return next_move
 
 
-def get_move_return(kr, kc, next_r, next_c):
-    print("{} {} {} {}".format(kr, kc, next_r, next_c), file=sys.stderr)
+def get_move_string(kr, kc, next_r, next_c):
+    print("Current: {},{} next: {},{}".format(kr, kc, next_r, next_c), file=sys.stderr)
     if kr < next_r:
         return "DOWN"
     if kr > next_r:
