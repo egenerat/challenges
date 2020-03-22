@@ -1,16 +1,39 @@
 import java.util.*;
 
+class Coord {
+    final int x;
+    final int y;
+
+    Coord(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    String getMove(int x, int y) {
+        return "";
+    }
+}
+
 enum CellType {
     WATER,
-    ISLAND
+    ISLAND;
+
+    @Override
+    public String toString() {
+        switch(this) {
+            case WATER:
+                return " ";
+            case ISLAND:
+                return "X";
+            default:
+                throw new IllegalArgumentException();
+        }
+    }
 }
 
 class Board {
     List<List<CellType>> cells;
     Board(List<String> lines) {
-//        for (String foo: lines) {
-//            System.err.println(foo);
-//        }
 
         cells = new ArrayList<>();
         for (String line: lines) {
@@ -29,6 +52,23 @@ class Board {
 
     CellType getCell(int x, int y) {
         return cells.get(y).get(x);
+    }
+
+    List<Coord> getAvailableMoves(Coord current) {
+        List<Coord> result = new ArrayList<>();
+        if (current.x > 0 && getCell(current.x - 1, current.y) != CellType.ISLAND) {
+            result.add(new Coord(current.x - 1, current.y));
+        }
+        if (current.x < 14 && getCell(current.x + 1, current.y) != CellType.ISLAND) {
+            result.add(new Coord(current.x + 1, current.y));
+        }
+        if (current.y > 0 && getCell(current.x, current.y - 1) != CellType.ISLAND) {
+            result.add(new Coord(current.x, current.y - 1));
+        }
+        if (current.y < 14 && getCell(current.x, current.y + 1) != CellType.ISLAND) {
+            result.add(new Coord(current.x, current.y + 1));
+        }
+        return result;
     }
 
      public String toString() {
@@ -60,12 +100,10 @@ class Player {
             map.add(line);
         }
         Board foo = new Board(map);
-        System.err.println(foo.toString());
 
-        // Write an action using System.out.println()
-        // To debug: System.err.println("Debug messages...");
-
-        System.out.println("14 14");
+//        Starting position
+//        We should make sure it is not a island cell
+        System.out.println("7 7");
 
         // game loop
         while (true) {
@@ -82,6 +120,9 @@ class Player {
                 in.nextLine();
             }
             String opponentOrders = in.nextLine();
+
+            List<Coord> availableMoves = foo.getAvailableMoves(new Coord(x, y));
+            System.err.println(availableMoves.size() + " available moves");
 
             // Write an action using System.out.println()
             // To debug: System.err.println("Debug messages...");
