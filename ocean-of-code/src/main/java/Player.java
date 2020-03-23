@@ -1,4 +1,5 @@
 import java.util.*;
+import java.util.stream.Collectors;
 
 class Coord {
     final int x;
@@ -9,8 +10,19 @@ class Coord {
         this.y = y;
     }
 
-    String getMove(int x, int y) {
-        return "";
+    String getMove(Coord target) {
+        if (x < target.x) {
+            return "MOVE E";
+        }
+        else if (x > target.x) {
+            return "MOVE W";
+        }
+        else if (y < target.y) {
+            return "MOVE S";
+        }
+        else {
+            return "MOVE N";
+        }
     }
 }
 
@@ -33,6 +45,8 @@ enum CellType {
 
 class Board {
     List<List<CellType>> cells;
+    boolean[][] visited = new boolean[15][15];
+
     Board(List<String> lines) {
 
         cells = new ArrayList<>();
@@ -54,18 +68,22 @@ class Board {
         return cells.get(y).get(x);
     }
 
+    CellType getCell(Coord pos) {
+        return getCell(pos.x, pos.y);
+    }
+
     List<Coord> getAvailableMoves(Coord current) {
         List<Coord> result = new ArrayList<>();
-        if (current.x > 0 && getCell(current.x - 1, current.y) != CellType.ISLAND) {
+        if (current.x > 0 && getCell(current.x - 1, current.y) != CellType.ISLAND && !visited[current.y][current.x - 1]) {
             result.add(new Coord(current.x - 1, current.y));
         }
-        if (current.x < 14 && getCell(current.x + 1, current.y) != CellType.ISLAND) {
+        if (current.x < 14 && getCell(current.x + 1, current.y) != CellType.ISLAND && !visited[current.y][current.x + 1]) {
             result.add(new Coord(current.x + 1, current.y));
         }
-        if (current.y > 0 && getCell(current.x, current.y - 1) != CellType.ISLAND) {
+        if (current.y > 0 && getCell(current.x, current.y - 1) != CellType.ISLAND && !visited[current.y - 1][current.x]) {
             result.add(new Coord(current.x, current.y - 1));
         }
-        if (current.y < 14 && getCell(current.x, current.y + 1) != CellType.ISLAND) {
+        if (current.y < 14 && getCell(current.x, current.y + 1) != CellType.ISLAND && !visited[current.y + 1][current.x]) {
             result.add(new Coord(current.x, current.y + 1));
         }
         return result;
@@ -73,13 +91,45 @@ class Board {
 
      public String toString() {
         StringBuilder sb = new StringBuilder();
-        for (List<CellType> row : cells) {
-            for (CellType cell: row) {
-                sb.append(cell);
+         for (int j=0; j<15; j++) {
+             for (int i=0; i<15; i++) {
+                 CellType c = getCell(i, j);
+                 if (c == CellType.WATER && visited[j][i]) {
+                    sb.append("-");
+                 }
+                 else if (c == CellType.WATER && !visited[j][i]) {
+                     sb.append(" ");
+                 }
+                 else {
+                     sb.append(c);
+                 }
             }
             sb.append("\n");
         }
         return sb.toString();
+     }
+
+     Coord getInitialPosition() {
+        List<Coord> initialPositions = new ArrayList<>();
+        initialPositions.add(new Coord(7, 7));
+        initialPositions.add(new Coord(7, 8));
+        initialPositions.add(new Coord(8, 7));
+        initialPositions.add(new Coord(8, 8));
+        initialPositions.add(new Coord(7, 9));
+
+        return initialPositions.stream()
+                .filter(pos -> getCell(pos) != CellType.ISLAND)
+                .findFirst().get();
+     }
+
+     void markAsVisited(Coord coord) {
+        visited[coord.y][coord.x] = true;
+     }
+
+     void resetVisited() {
+         for (boolean[] row: visited) {
+             Arrays.fill(row, false);
+         }
      }
 }
 
@@ -103,10 +153,12 @@ class Player {
 
 //        Starting position
 //        We should make sure it is not a island cell
-        System.out.println("7 7");
+        Coord initialPosition = foo.getInitialPosition();
+        System.out.println(initialPosition.x + " " + initialPosition.y);
 
         // game loop
         while (true) {
+//            Loop input
             int x = in.nextInt();
             int y = in.nextInt();
             int myLife = in.nextInt();
@@ -121,14 +173,35 @@ class Player {
             }
             String opponentOrders = in.nextLine();
 
+//            Our logic
+            Coord current = new Coord(x, y);
+
+            System.err.println("torpedoCooldown: " + torpedoCooldown);
+            foo.markAsVisited(current);
+//            System.err.println("===============");
+//            System.err.println(foo);
+//            System.err.println("===============");
             List<Coord> availableMoves = foo.getAvailableMoves(new Coord(x, y));
             System.err.println(availableMoves.size() + " available moves");
-
+            
             // Write an action using System.out.println()
             // To debug: System.err.println("Debug messages...");
 
-            System.out.println("MSG hello");
-            // System.out.println("MOVE N TORPEDO");
+
+            List<Coord> availableMoves = foo.getAvailableMoves(current);
+            System.err.println(availableMoves.size() + " available moves");
+            if (availableMoves.size() > 0) {
+                System.out.println(current.getMove(availableMoves.get(0)) + " TORPEDO");
+            }
+            else {
+                System.out.println("SURFACE" + " TORPEDO");
+                foo.resetVisited();
+            }
+//            if (torpedoCooldown > 0) {
+        // }
+//            else {
+//                System.out.println("TORPEDO 0 7");
+//            }
         }
     }
 }
