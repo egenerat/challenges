@@ -149,11 +149,14 @@ class Player {
             String line = in.nextLine();
             map.add(line);
         }
-        Board foo = new Board(map);
+        Board board = new Board(map);
+
+        List<String> opponentsMoveHistory = new ArrayList<>();
+        int opponentXVariation = 0;
+        int opponentYVariation = 0;
 
 //        Starting position
-//        We should make sure it is not a island cell
-        Coord initialPosition = foo.getInitialPosition();
+        Coord initialPosition = board.getInitialPosition();
         System.out.println(initialPosition.x + " " + initialPosition.y);
 
         // game loop
@@ -171,31 +174,54 @@ class Player {
             if (in.hasNextLine()) {
                 in.nextLine();
             }
-            String opponentOrders = in.nextLine();
+            String opponentOrdersText = in.nextLine();
+            if (!opponentOrdersText.equals("NA")) {
+                System.err.println(opponentOrdersText);
+                String[] opponentsOrders = opponentOrdersText.split("\\|");
+                for (String order: opponentsOrders) {
+                    String[] splitOrder = order.split(" ");
+                    if (splitOrder[0].equals("MOVE")) {
+                        String opponentDirection = splitOrder[1];
+                        System.err.println(opponentDirection);
+                        switch(opponentDirection) {
+                            case "N":
+                                opponentYVariation -= 1; break;
+                            case "S":
+                                opponentYVariation += 1; break;
+                            case "E":
+                                opponentXVariation += 1; break;
+                            case "W":
+                                opponentXVariation -= 1; break;
+                        }
+//                        Compute in which area the opponent can be
+                        opponentsMoveHistory.add(opponentDirection);
+                    }
+                    if (splitOrder[0].equals("TORPEDO")) {
+                        System.err.println("/!\\ BOOOOOOOMMMMMMMM");
+                        System.err.println("Target: " + splitOrder[0] + ", " + splitOrder[1]);
+                    }
+                }
+                System.err.println("Opponent X variation: " + opponentXVariation);
+                System.err.println("Opponent Y variation: " + opponentYVariation);
+            }
 
 //            Our logic
             Coord current = new Coord(x, y);
 
             System.err.println("torpedoCooldown: " + torpedoCooldown);
-            foo.markAsVisited(current);
+            board.markAsVisited(current);
 //            System.err.println("===============");
 //            System.err.println(foo);
 //            System.err.println("===============");
-            List<Coord> availableMoves = foo.getAvailableMoves(new Coord(x, y));
+            List<Coord> availableMoves = board.getAvailableMoves(new Coord(x, y));
             System.err.println(availableMoves.size() + " available moves");
-            
-            // Write an action using System.out.println()
-            // To debug: System.err.println("Debug messages...");
 
-
-            List<Coord> availableMoves = foo.getAvailableMoves(current);
-            System.err.println(availableMoves.size() + " available moves");
             if (availableMoves.size() > 0) {
                 System.out.println(current.getMove(availableMoves.get(0)) + " TORPEDO");
             }
             else {
                 System.out.println("SURFACE" + " TORPEDO");
-                foo.resetVisited();
+                board.resetVisited();
             }
 //            if (torpedoCooldown > 0) {
         // }
