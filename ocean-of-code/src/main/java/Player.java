@@ -1,5 +1,4 @@
 import java.util.*;
-import java.util.stream.Collectors;
 
 class Coord {
     final int x;
@@ -131,6 +130,21 @@ class Board {
              Arrays.fill(row, false);
          }
      }
+
+     void computeOpponentPosition(int xVariation, int yVariation) {
+//        Returns the list of zones where the opponent can be
+//         Ways to find where is the opponent:
+//         - The move directions
+//         - If it is touched by a torpedo
+//         - Where he is launching torpedo
+//         int oppLife = in.nextInt();
+        int minX = Math.max(0, xVariation);
+        int minY = Math.max(0, yVariation);
+        int maxX = Math.min(14, 14 + xVariation);
+        int maxY = Math.min(14, 14 + yVariation);
+        System.err.println("Opponent x between " + minX + " and " + maxX);
+        System.err.println("Opponent y between " + minY + " and " + maxY);
+     }
 }
 
 class Player {
@@ -182,7 +196,6 @@ class Player {
                     String[] splitOrder = order.split(" ");
                     if (splitOrder[0].equals("MOVE")) {
                         String opponentDirection = splitOrder[1];
-                        System.err.println(opponentDirection);
                         switch(opponentDirection) {
                             case "N":
                                 opponentYVariation -= 1; break;
@@ -201,20 +214,20 @@ class Player {
                         System.err.println("Target: " + splitOrder[0] + ", " + splitOrder[1]);
                     }
                 }
-                System.err.println("Opponent X variation: " + opponentXVariation);
-                System.err.println("Opponent Y variation: " + opponentYVariation);
+                board.computeOpponentPosition(opponentXVariation, opponentYVariation);
+//                Improve location with the launches of torpedo
             }
 
 //            Our logic
             Coord current = new Coord(x, y);
 
-            System.err.println("torpedoCooldown: " + torpedoCooldown);
+//            System.err.println("torpedoCooldown: " + torpedoCooldown);
             board.markAsVisited(current);
 //            System.err.println("===============");
 //            System.err.println(foo);
 //            System.err.println("===============");
             List<Coord> availableMoves = board.getAvailableMoves(new Coord(x, y));
-            System.err.println(availableMoves.size() + " available moves");
+//            System.err.println(availableMoves.size() + " available moves");
 
             if (availableMoves.size() > 0) {
                 System.out.println(current.getMove(availableMoves.get(0)) + " TORPEDO");
