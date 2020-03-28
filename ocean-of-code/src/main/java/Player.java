@@ -108,6 +108,12 @@ class Board {
         return sb.toString();
      }
 
+     void debug() {
+         System.err.println("===============");
+         System.err.println(toString());
+         System.err.println("===============");
+     }
+
      Coord getInitialPosition() {
         List<Coord> initialPositions = new ArrayList<>();
         initialPositions.add(new Coord(7, 7));
@@ -130,21 +136,103 @@ class Board {
              Arrays.fill(row, false);
          }
      }
+}
 
-     void computeOpponentPosition(int xVariation, int yVariation) {
+class Strategist {
+//    Improve location with:
+//    - the launches of torpedo
+//    - the surface command
+
+    Board board;
+    List<String> opponentsMoveHistory = new ArrayList<>();
+    int opponentXVariation = 0;
+    int opponentYVariation = 0;
+
+    Strategist(Board board) {
+        this.board = board;
+    }
+
+    String getMove(Coord current, String opponentMove) {
+        List<Coord> availableMoves = board.getAvailableMoves(current);
+//        System.err.println(availableMoves.size() + " available moves");
+
+        String opponentDirection = parse(opponentMove);
+        opponentsMoveHistory.add(opponentDirection);
+        computeVariations(opponentDirection);
+        computeOpponentPosition();
+
+        String response;
+        if (availableMoves.size() > 0) {
+            response = current.getMove(availableMoves.get(0));
+        }
+        else {
+            response = "SURFACE";
+            board.resetVisited();
+        }
+//        System.err.println("torpedoCooldown: " + torpedoCooldown);
+//        if (torpedoCooldown > 0) {
+        // }
+//        else {
+//            System.out.println("TORPEDO 0 7");
+//        }
+        return response;
+    }
+
+    void computeVariations(String opponentDirection) {
+//        Test the surface case
+        switch(opponentDirection) {
+            case "N":
+                opponentYVariation -= 1; break;
+            case "S":
+                opponentYVariation += 1; break;
+            case "E":
+                opponentXVariation += 1; break;
+            case "W":
+                opponentXVariation -= 1; break;
+        }
+    }
+
+    void computeOpponentPosition() {
 //        Returns the list of zones where the opponent can be
 //         Ways to find where is the opponent:
 //         - The move directions
 //         - If it is touched by a torpedo
 //         - Where he is launching torpedo
 //         int oppLife = in.nextInt();
-        int minX = Math.max(0, xVariation);
-        int minY = Math.max(0, yVariation);
-        int maxX = Math.min(14, 14 + xVariation);
-        int maxY = Math.min(14, 14 + yVariation);
+        int minX = Math.max(0, opponentXVariation);
+        int minY = Math.max(0, opponentYVariation);
+        int maxX = Math.min(14, 14 + opponentXVariation);
+        int maxY = Math.min(14, 14 + opponentYVariation);
         System.err.println("Opponent x between " + minX + " and " + maxX);
         System.err.println("Opponent y between " + minY + " and " + maxY);
-     }
+        int sizeOfArea = (maxX - minX) * (maxY - minY);
+        System.err.println("Size of the area : " + sizeOfArea);
+    }
+
+    String parse(String opponentOrdersText) {
+        String opponentDirection = "";
+
+//       If we start, the first opponent's order is "NA"
+        if (!opponentOrdersText.equals("NA")) {
+            System.err.println(opponentOrdersText);
+            String[] opponentsOrders = opponentOrdersText.split("\\|");
+            for (String order: opponentsOrders) {
+                String[] splitOrder = order.split(" ");
+                if (splitOrder[0].equals("MOVE")) {
+                    opponentDirection = splitOrder[1];
+                }
+                if (splitOrder[0].equals("TORPEDO")) {
+                    System.err.println("/!\\ BOOOOOOOMMMMMMMM");
+                    System.err.println("Target: " + splitOrder[1] + ", " + splitOrder[2]);
+                }
+            }
+        }
+        return opponentDirection;
+    }
+
+    int computeSizePossiblePositions() {
+        return -1;
+    }
 }
 
 class Player {
@@ -164,10 +252,7 @@ class Player {
             map.add(line);
         }
         Board board = new Board(map);
-
-        List<String> opponentsMoveHistory = new ArrayList<>();
-        int opponentXVariation = 0;
-        int opponentYVariation = 0;
+        Strategist strategist = new Strategist(board);
 
 //        Starting position
         Coord initialPosition = board.getInitialPosition();
@@ -189,58 +274,13 @@ class Player {
                 in.nextLine();
             }
             String opponentOrdersText = in.nextLine();
-            if (!opponentOrdersText.equals("NA")) {
-                System.err.println(opponentOrdersText);
-                String[] opponentsOrders = opponentOrdersText.split("\\|");
-                for (String order: opponentsOrders) {
-                    String[] splitOrder = order.split(" ");
-                    if (splitOrder[0].equals("MOVE")) {
-                        String opponentDirection = splitOrder[1];
-                        switch(opponentDirection) {
-                            case "N":
-                                opponentYVariation -= 1; break;
-                            case "S":
-                                opponentYVariation += 1; break;
-                            case "E":
-                                opponentXVariation += 1; break;
-                            case "W":
-                                opponentXVariation -= 1; break;
-                        }
-//                        Compute in which area the opponent can be
-                        opponentsMoveHistory.add(opponentDirection);
-                    }
-                    if (splitOrder[0].equals("TORPEDO")) {
-                        System.err.println("/!\\ BOOOOOOOMMMMMMMM");
-                        System.err.println("Target: " + splitOrder[0] + ", " + splitOrder[1]);
-                    }
-                }
-                board.computeOpponentPosition(opponentXVariation, opponentYVariation);
-//                Improve location with the launches of torpedo
-            }
 
 //            Our logic
             Coord current = new Coord(x, y);
-
-//            System.err.println("torpedoCooldown: " + torpedoCooldown);
             board.markAsVisited(current);
-//            System.err.println("===============");
-//            System.err.println(foo);
-//            System.err.println("===============");
-            List<Coord> availableMoves = board.getAvailableMoves(new Coord(x, y));
-//            System.err.println(availableMoves.size() + " available moves");
+//            board.debug();
 
-            if (availableMoves.size() > 0) {
-                System.out.println(current.getMove(availableMoves.get(0)) + " TORPEDO");
-            }
-            else {
-                System.out.println("SURFACE" + " TORPEDO");
-                board.resetVisited();
-            }
-//            if (torpedoCooldown > 0) {
-        // }
-//            else {
-//                System.out.println("TORPEDO 0 7");
-//            }
+            System.out.println(strategist.getMove(current, opponentOrdersText));
         }
     }
 }
