@@ -12,14 +12,11 @@ class Coord {
     String getMove(Coord target) {
         if (x < target.x) {
             return "MOVE E";
-        }
-        else if (x > target.x) {
+        } else if (x > target.x) {
             return "MOVE W";
-        }
-        else if (y < target.y) {
+        } else if (y < target.y) {
             return "MOVE S";
-        }
-        else {
+        } else {
             return "MOVE N";
         }
     }
@@ -31,7 +28,7 @@ enum CellType {
 
     @Override
     public String toString() {
-        switch(this) {
+        switch (this) {
             case WATER:
                 return " ";
             case ISLAND:
@@ -49,13 +46,12 @@ class Board {
     Board(List<String> lines) {
 
         cells = new ArrayList<>();
-        for (String line: lines) {
+        for (String line : lines) {
             List<CellType> row = new ArrayList<>();
-            for (char c: line.toCharArray()) {
+            for (char c : line.toCharArray()) {
                 if (c == '.') {
                     row.add(CellType.WATER);
-                }
-                else {
+                } else {
                     row.add(CellType.ISLAND);
                 }
             }
@@ -88,33 +84,31 @@ class Board {
         return result;
     }
 
-     public String toString() {
+    public String toString() {
         StringBuilder sb = new StringBuilder();
-         for (int j=0; j<15; j++) {
-             for (int i=0; i<15; i++) {
-                 CellType c = getCell(i, j);
-                 if (c == CellType.WATER && visited[j][i]) {
+        for (int j = 0; j < 15; j++) {
+            for (int i = 0; i < 15; i++) {
+                CellType c = getCell(i, j);
+                if (c == CellType.WATER && visited[j][i]) {
                     sb.append("-");
-                 }
-                 else if (c == CellType.WATER && !visited[j][i]) {
-                     sb.append(" ");
-                 }
-                 else {
-                     sb.append(c);
-                 }
+                } else if (c == CellType.WATER && !visited[j][i]) {
+                    sb.append(" ");
+                } else {
+                    sb.append(c);
+                }
             }
             sb.append("\n");
         }
         return sb.toString();
-     }
+    }
 
-     void debug() {
-         System.err.println("===============");
-         System.err.println(toString());
-         System.err.println("===============");
-     }
+    void debug() {
+        System.err.println("===============");
+        System.err.println(toString());
+        System.err.println("===============");
+    }
 
-     Coord getInitialPosition() {
+    Coord getInitialPosition() {
         List<Coord> initialPositions = new ArrayList<>();
         initialPositions.add(new Coord(7, 7));
         initialPositions.add(new Coord(7, 8));
@@ -125,17 +119,52 @@ class Board {
         return initialPositions.stream()
                 .filter(pos -> getCell(pos) != CellType.ISLAND)
                 .findFirst().get();
-     }
+    }
 
-     void markAsVisited(Coord coord) {
+    void markAsVisited(Coord coord) {
         visited[coord.y][coord.x] = true;
-     }
+    }
 
-     void resetVisited() {
-         for (boolean[] row: visited) {
-             Arrays.fill(row, false);
-         }
-     }
+    void resetVisited() {
+        for (boolean[] row : visited) {
+            Arrays.fill(row, false);
+        }
+    }
+
+    boolean[][] drawDiamond(Coord target, int distance) {
+//       TODO This is a simple approximation, but the torpedo cannot fly over an island, it needs to go around
+//         TODO ArrayOutOfBoundException unchecked
+        boolean[][] diamond = new boolean[15][15];
+        for (int diffY = -distance; diffY <= distance; diffY++) {
+            int absDiffY = Math.abs(diffY);
+            for (int diffX = -distance + absDiffY; diffX <= distance - absDiffY; diffX++) {
+                diamond[target.y + diffY][target.x + diffX] = true;
+            }
+        }
+        return diamond;
+    }
+
+    void findTorpadoLaunchArea(Coord target) {
+        boolean[][] possible = drawDiamond(target, 4);
+        int countPossible = 0;
+        System.err.println("DIAMOND============");
+        for (int j = 0; j < 15; j++) {
+            for (int i = 0; i < 15; i++) {
+                if (i == target.x && j == target.y) {
+                    System.err.print("O");
+                    countPossible++;
+                } else if (possible[j][i] && getCell(i, j) != CellType.ISLAND) {
+                    System.err.print("X");
+                    countPossible++;
+                } else {
+                    System.err.print(" ");
+                }
+            }
+            System.err.println();
+        }
+        System.err.println(countPossible + " possible positions");
+        System.err.println("DIAMOND END============");
+    }
 }
 
 class Strategist {
@@ -147,9 +176,26 @@ class Strategist {
     List<String> opponentsMoveHistory = new ArrayList<>();
     int opponentXVariation = 0;
     int opponentYVariation = 0;
+    int torpedoCooldown;
+    int sonarCooldown;
+    int silenceCooldown;
 
     Strategist(Board board) {
         this.board = board;
+    }
+
+    String getLoadAction() {
+        String loadAction;
+        if (torpedoCooldown > 0) {
+            loadAction = " TORPEDO";
+        } else if (sonarCooldown > 0) {
+            loadAction = " SONAR";
+        } else if (silenceCooldown > 0) {
+            loadAction = " SILENCE";
+        } else {
+            loadAction = "";
+        }
+        return loadAction;
     }
 
     String getMove(Coord current, String opponentMove) {
@@ -163,9 +209,8 @@ class Strategist {
 
         String response;
         if (availableMoves.size() > 0) {
-            response = current.getMove(availableMoves.get(0));
-        }
-        else {
+            response = current.getMove(availableMoves.get(0)) + getLoadAction();
+        } else {
             response = "SURFACE";
             board.resetVisited();
         }
@@ -180,15 +225,19 @@ class Strategist {
 
     void computeVariations(String opponentDirection) {
 //        Test the surface case
-        switch(opponentDirection) {
+        switch (opponentDirection) {
             case "N":
-                opponentYVariation -= 1; break;
+                opponentYVariation -= 1;
+                break;
             case "S":
-                opponentYVariation += 1; break;
+                opponentYVariation += 1;
+                break;
             case "E":
-                opponentXVariation += 1; break;
+                opponentXVariation += 1;
+                break;
             case "W":
-                opponentXVariation -= 1; break;
+                opponentXVariation -= 1;
+                break;
         }
     }
 
@@ -216,7 +265,7 @@ class Strategist {
         if (!opponentOrdersText.equals("NA")) {
             System.err.println(opponentOrdersText);
             String[] opponentsOrders = opponentOrdersText.split("\\|");
-            for (String order: opponentsOrders) {
+            for (String order : opponentsOrders) {
                 String[] splitOrder = order.split(" ");
                 if (splitOrder[0].equals("MOVE")) {
                     opponentDirection = splitOrder[1];
@@ -225,6 +274,10 @@ class Strategist {
                     System.err.println("/!\\ BOOOOOOOMMMMMMMM");
                     System.err.println("Target: " + splitOrder[1] + ", " + splitOrder[2]);
                 }
+                if (splitOrder[0].equals("SURFACE")) {
+//                    TODO
+                    System.err.println("Opponent has surfaced in : " + splitOrder[1]);
+                }
             }
         }
         return opponentDirection;
@@ -232,6 +285,12 @@ class Strategist {
 
     int computeSizePossiblePositions() {
         return -1;
+    }
+
+    void updateCooldowns(int torpedoCooldown, int sonarCooldown, int silenceCooldown) {
+        this.torpedoCooldown = torpedoCooldown;
+        this.sonarCooldown = sonarCooldown;
+        this.silenceCooldown = silenceCooldown;
     }
 }
 
@@ -278,8 +337,9 @@ class Player {
 //            Our logic
             Coord current = new Coord(x, y);
             board.markAsVisited(current);
+            board.findTorpadoLaunchArea(current);
 //            board.debug();
-
+            strategist.updateCooldowns(torpedoCooldown, sonarCooldown, silenceCooldown);
             System.out.println(strategist.getMove(current, opponentOrdersText));
         }
     }
