@@ -20,6 +20,39 @@ class Coord {
             return "MOVE N";
         }
     }
+
+    public String toString() {
+        return "Coord " + x + "," + y;
+    }
+
+//    TODO does not take islands into consideration
+    int distance(Coord other) {
+        return Math.abs(x - other.x) + Math.abs(y - other.y);
+    }
+}
+
+class Direction {
+    int xVar;
+    int yVar;
+
+    Direction(String directionLetter) {
+        xVar = 0;
+        yVar = 0;
+        switch (directionLetter) {
+            case "N":
+                yVar--;
+                break;
+            case "E":
+                xVar++;
+                break;
+            case "S":
+                yVar++;
+                break;
+            case "W":
+                xVar--;
+                break;
+        }
+    }
 }
 
 enum CellType {
@@ -151,7 +184,7 @@ class Board {
 
     Map findTorpedoLaunchArea(Coord target) {
         Map possible = drawDiamond(target, 4);
-        System.err.println(possible.toString());
+//        System.err.println(possible.toString());
         return possible;
     }
 
@@ -184,14 +217,22 @@ class Map {
     boolean[][] area;
     int size;
 
-    public Map(boolean[][] area, int size) {
+    Map() {
+        this.area = new boolean[15][15];
+        for (boolean[] row: area) {
+            Arrays.fill(row, true);
+        }
+        this.size = 225;
+    }
+
+    Map(boolean[][] area, int size) {
         this.area = area;
         this.size = size;
     }
 
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append(size).append(" possible positions");
+        sb.append(size).append(" possible positions\n");
         for (int j = 0; j < 15; j++) {
             for (int i = 0; i < 15; i++) {
                 if (area[j][i]) {
@@ -203,6 +244,31 @@ class Map {
             sb.append("\n");
         }
         return sb.toString();
+    }
+
+    Map shift(Direction d) {
+//        System.err.println("xShift: " + d.xVar);
+//        System.err.println("yShift: " + d.yVar);
+        boolean[][] result = new boolean[15][15];
+        int count = 0;
+        for (int j = 0; j < 15; j++) {
+            for (int i = 0; i < 15; i++) {
+//                At this point we should ensure the cell is not an island, but at the moment
+//                we don't have a reference to the board
+//                if (board.getCell(i, j) != CellType.ISLAND) {
+//                Make sure we don't go off the limit
+                int xCopy = i - d.xVar;
+                int yCopy = j - d.yVar;
+                if (yCopy >= 0 && yCopy < 15 && xCopy >= 0 && xCopy < 15) {
+                    boolean value = area[yCopy][xCopy];
+                    result[j][i] = value;
+                    if (value) {
+                        count++;
+                    }
+                }
+            }
+        }
+        return new Map(result, count);
     }
 
     Map substract(Map other) {
@@ -218,22 +284,34 @@ class Map {
         }
         return new Map(result, count);
     }
+
+    List<Coord> getPossiblePositions() {
+        List<Coord> possible = new ArrayList<>();
+        for (int j = 0; j < 15; j++) {
+            for (int i = 0; i < 15; i++) {
+                if (area[j][i]) {
+                    possible.add(new Coord(i, j));
+                }
+            }
+        }
+        return  possible;
+    }
 }
 
 class OpponentState {
     String command;
-    String direction;
-    Map possiblePositions;
+    Direction direction;
+    Map map;
     int oppLife;
 
-    OpponentState(String command, String direction, int oppLife) {
+    OpponentState(String command, Direction direction, int oppLife) {
         this.command = command;
         this.direction = direction;
         this.oppLife = oppLife;
     }
 
-    void setComputed(Map possiblePositions) {
-        this.possiblePositions = possiblePositions;
+    void setComputed(Map map) {
+        this.map = map;
     }
 }
 
@@ -251,7 +329,7 @@ class Strategist {
     int silenceCooldown;
     int oppLife;
     Coord current;
-    String opponentMove;
+    String opponentRawOrder;
 
     Strategist(Board board) {
         this.board = board;
@@ -278,32 +356,80 @@ class Strategist {
         this.silenceCooldown = silenceCooldown;
         this.oppLife = oppLife;
         this.current = current;
-        this.opponentMove = opponentMove;
+        this.opponentRawOrder = opponentMove;
+    }
+
+    Map getWaterMap() {
+        boolean[][] map = new boolean[15][15];
+        int count = 0;
+        for (int j = 0; j < 15; j++) {
+            for (int i = 0; i < 15; i++) {
+                boolean value = board.getCell(i, j) != CellType.ISLAND;
+                map[j][i] = value;
+                if (value) {
+                    count++;
+                }
+            }
+        }
+        return new Map(map, count);
     }
 
     Map getOpponentLocation(Foo opponent) {
-        OpponentState latestOS = new OpponentState(opponentMove, opponent.direction, oppLife);
-        opponentsMoveHistory.add(latestOS);
-        computeVariations(opponent.direction);
-        Map map = computeOpponentPositionFromHistory();
-        latestOS.setComputed(map);
-        for (OpponentState s : opponentsMoveHistory) {
-            System.err.println(s.command + " " + s.possiblePositions.size);
+        if (opponent.direction != null) {
+            computeVariations(opponent.direction);
         }
-        return null;
+        Map map = getWaterMap();
+        map.substract(computeOpponentPositionFromHistory());
+//        System.err.println("with history: " + map.size);
+//        System.err.println(map);
+        if (opponent.direction != null && opponentsMoveHistory.size() >= 2) {
+            Map previousMap = opponentsMoveHistory.get(opponentsMoveHistory.size() - 2).map;
+//            System.err.println("Previous map");
+//            System.err.println(previousMap);
+            map = map.substract(computeOpponentPositionFromPrevious(opponentsMoveHistory.get(opponentsMoveHistory.size() - 2),
+                    opponent.direction));
+//            System.err.println("after previous pos: " + map.size);
+//            System.err.println(map);
+        }
+
+//        opponentsMoveHistory.get(opponentsMoveHistory.size() - 1), opponent.direction
+        if (opponent.map != null) {
+            map = map.substract(opponent.map);
+//            System.err.println("after parse: " + map.size);
+        }
+//        System.err.println("Opp can be in " + map.size + " positions");
+//        System.err.println(map);
+        opponentsMoveHistory.get(opponentsMoveHistory.size() - 1).setComputed(map);
+        for (OpponentState s : opponentsMoveHistory) {
+//            System.err.println(s.command + " " + s.possiblePositions.size);
+        }
+        return map;
     }
 
     String getMove() {
         List<Coord> availableMoves = board.getAvailableMoves(current);
+        String action = "";
 //        System.err.println(availableMoves.size() + " available moves");
 
 //        This one should only be called if MOVE
-        Foo foo = parse(opponentMove);
-        Map bar = getOpponentLocation(foo);
+        Foo foo = parse(opponentRawOrder);
+        OpponentState latestOS = new OpponentState(opponentRawOrder, foo.direction, oppLife);
+        opponentsMoveHistory.add(latestOS);
+        Map opponent = getOpponentLocation(foo);
+
+        if (opponent.size == 1) {
+            System.err.println("BOOOOOM");
+            Coord opponentPosition = opponent.getPossiblePositions().get(0);
+            System.err.println("Target acquired: " + opponentPosition );
+
+            if (current.distance(opponentPosition) < 4 && current.distance(opponentPosition) > 0 && torpedoCooldown == 0) {
+                action = " | TORPEDO " + opponentPosition.x + " " + opponentPosition.y;
+            }
+        }
 
         String response;
         if (availableMoves.size() > 0) {
-            response = current.getMove(availableMoves.get(0)) + getLoadAction();
+            response = current.getMove(availableMoves.get(0)) + getLoadAction() + action;
         } else {
             response = "SURFACE";
             board.resetVisited();
@@ -317,22 +443,9 @@ class Strategist {
         return response;
     }
 
-    void computeVariations(String opponentDirection) {
-//        Test the surface case
-        switch (opponentDirection) {
-            case "N":
-                opponentYVariation -= 1;
-                break;
-            case "S":
-                opponentYVariation += 1;
-                break;
-            case "E":
-                opponentXVariation += 1;
-                break;
-            case "W":
-                opponentXVariation -= 1;
-                break;
-        }
+    void computeVariations(Direction opponentDirection) {
+        opponentXVariation += opponentDirection.xVar;
+        opponentYVariation += opponentDirection.yVar;
     }
 
     Map computeOpponentPositionFromHistory() {
@@ -346,56 +459,72 @@ class Strategist {
         //        TODO This needs to be improved to take previous positions into consideration.
         //         The new zone can never be larger than the previous one, except if the opponent used silence
         boolean[][] area = new boolean[15][15];
+        int count = 0;
+//        System.err.println("XVar: " + opponentXVariation);
+//        System.err.println("YVar: " + opponentYVariation);
         int minX = Math.max(0, opponentXVariation);
         int minY = Math.max(0, opponentYVariation);
         int maxX = Math.min(14, 14 + opponentXVariation);
         int maxY = Math.min(14, 14 + opponentYVariation);
-        System.err.println("Opponent x between " + minX + " and " + maxX);
-        System.err.println("Opponent y between " + minY + " and " + maxY);
-        int sizeOfArea = ((maxX - minX) + 1) * ((maxY - minY) + 1);
-        System.err.println("Size of the area : " + sizeOfArea);
-        return new Map(area, sizeOfArea);
+        for (int j = minY; j <= maxY; j++) {
+            for (int i = minX; i <= maxX; i++) {
+                area[j][i] = true;
+                count++;
+            }
+        }
+//        System.err.println("Opponent x between " + minX + " and " + maxX);
+//        System.err.println("Opponent y between " + minY + " and " + maxY);
+//        System.err.println("Size of the area : " + count);
+        return new Map(area, count);
+    }
+
+    Map computeOpponentPositionFromPrevious(OpponentState previous, Direction direction) {
+//        System.err.println(previous.possiblePositions);
+        return previous.map.shift(direction);
     }
 
     Foo parse(String opponentOrdersText) {
-        String opponentDirection = "";
-        Map map = null;
+        Direction opponentDirection = null;
+        Map map = new Map();
 
 //       If we start, the first opponent's order is "NA"
         if (!opponentOrdersText.equals("NA")) {
-            System.err.println(opponentOrdersText);
+//            System.err.println(opponentOrdersText);
             String[] opponentsOrders = opponentOrdersText.split("\\|");
             for (String order : opponentsOrders) {
                 String[] splitOrder = order.split(" ");
                 if (splitOrder[0].equals("MOVE")) {
-                    opponentDirection = splitOrder[1];
+                    opponentDirection = new Direction(splitOrder[1]);
                 }
-                if (splitOrder[0].equals("TORPEDO")) {
-                    System.err.println("/!\\ BOOOOOOOMMMMMMMM");
+                else if (splitOrder[0].equals("TORPEDO")) {
+//                    System.err.println("/!\\ BOOOOOOOMMMMMMMM");
                     int x = Integer.parseInt(splitOrder[1]);
                     int y = Integer.parseInt(splitOrder[2]);
-                    System.err.println("Target: " + x + ", " + y);
+//                    System.err.println("Target: " + x + ", " + y);
                     map = board.findTorpedoLaunchArea(new Coord(x, y));
                 }
-                if (splitOrder[0].equals("SURFACE")) {
-                    System.err.println("Opponent has surfaced in : " + splitOrder[1]);
+                else if (splitOrder[0].equals("SURFACE")) {
+//                    System.err.println("Opponent has surfaced in : " + splitOrder[1]);
                     map = board.convertSectorToArea(Integer.parseInt(splitOrder[1]));
 //                    System.err.println(map);
                 }
-                if (splitOrder[0].equals("SILENCE")) {
+                else if (splitOrder[0].equals("SILENCE")) {
                     System.err.println("Silence: this is going to be complicated");
+//                    TODO: It is still not random, from the previous position we can still find something
                 }
             }
         }
+//        System.err.println("End of parse:");
+//        System.err.println(map);
         return new Foo(opponentDirection, map);
     }
 }
 
 class Foo {
-    String direction;
+    Direction direction;
     Map map;
 
-    public Foo(String direction, Map map) {
+    public Foo(Direction direction, Map map) {
         this.direction = direction;
         this.map = map;
     }
