@@ -43,4 +43,38 @@ public class PossibilitiesTest extends TestCase {
         Possibilities expected = new Possibilities(expectedArea, 16);
         assertEquals(original.spread(1), expected);
     }
+
+    public void testSpreadUsualCase() {
+        boolean[][] originalArea = {
+                {
+                        false, false, false, false
+                },
+                {
+                        false, true, false, false
+                },
+                {
+                        false, false, false, false,
+                },
+                {
+                        false, false, false, true
+                }
+        };
+        Possibilities original = new Possibilities(originalArea, 2);
+        boolean[][] expectedArea = {
+                {
+                        false, true, false, false
+                },
+                {
+                        true, true, true, false
+                },
+                {
+                        false, true, false, true,
+                },
+                {
+                        false, false, true, true
+                }
+        };
+        Possibilities expected = new Possibilities(expectedArea, 8);
+        assertEquals(original.spread(1), expected);
+    }
 }

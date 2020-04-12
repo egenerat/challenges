@@ -296,8 +296,20 @@ class Possibilities {
         int count = 0;
         for (int j = 0; j < size; j++) {
             for (int i = 0; i < size; i++) {
-//                TODO
                 boolean value = area[j][i];
+//                TODO: only works if distance = 1
+                if (j > 0) {
+                    value |= area[j-1][i];
+                }
+                if (j < size - 1) {
+                    value |= area[j+1][i];
+                }
+                if (i > 0) {
+                    value |= area[j][i-1];
+                }
+                if (i < size - 1) {
+                    value |= area[j][i+1];
+                }
                 if (value) {
                     result[j][i] = true;
                     count++;
@@ -442,7 +454,7 @@ class Strategist {
 //            System.err.println("Previous map");
 //            System.err.println(previousMap);
             possibilities = possibilities.subtract(computeOpponentPositionFromPrevious(opponentsMoveHistory.get(opponentsMoveHistory.size() - 2),
-                    opponent.direction));
+                    opponent.direction, opponent.surface));
 //            System.err.println("after previous pos: " + map.size);
 //            System.err.println(map);
         }
@@ -453,7 +465,7 @@ class Strategist {
 //            System.err.println("after parse: " + map.size);
         }
 //        System.err.println("Opp can be in " + map.size + " positions");
-        System.err.println(possibilities);
+//        System.err.println(possibilities);
 
 //        Save the computed map
         opponentsMoveHistory.get(opponentsMoveHistory.size() - 1).setComputed(possibilities);
@@ -542,21 +554,27 @@ class Strategist {
         return new Possibilities(area, count);
     }
 
-    Possibilities computeOpponentPositionFromPrevious(OpponentState previous, Direction direction) {
+    Possibilities computeOpponentPositionFromPrevious(OpponentState previous, Direction direction, boolean surface) {
 //        System.err.println(previous.possiblePositions);
         if (direction != null) {
             return previous.possibilities.shift(direction);
         }
         else {
-//            If direction is null, it means the opponent has just surfaced.
-//            TODO
-            return null;
+//            If direction is null, it means the opponent has just played silence or surface.
+            if (surface) {
+                return previous.possibilities;
+        }
+            else {
+                return previous.possibilities.spread(4);
+    }
         }
     }
 
     Foo parse(String opponentOrdersText) {
         Direction opponentDirection = null;
         Possibilities possibilities = new Possibilities();
+        boolean surface = false;
+        boolean silence = false;
 
 //       If we start, the first opponent's order is "NA"
         if (!opponentOrdersText.equals("NA")) {
@@ -577,27 +595,32 @@ class Strategist {
                 else if (splitOrder[0].equals("SURFACE")) {
 //                    System.err.println("Opponent has surfaced in : " + splitOrder[1]);
                     possibilities = board.convertSectorToArea(Integer.parseInt(splitOrder[1]));
+                    surface = true;
 //                    System.err.println(map);
                 }
                 else if (splitOrder[0].equals("SILENCE")) {
-                    System.err.println("Silence: this is going to be complicated");
-//                    TODO: It is still not random, from the previous position we can still find something
+                    System.err.println("Silence...");
+                    silence = true;
                 }
             }
         }
 //        System.err.println("End of parse:");
 //        System.err.println(map);
-        return new Foo(opponentDirection, possibilities);
+        return new Foo(opponentDirection, possibilities, surface, silence);
     }
 }
 
 class Foo {
     Direction direction;
     Possibilities possibilities;
+    boolean surface;
+    boolean silence;
 
-    public Foo(Direction direction, Possibilities possibilities) {
+    public Foo(Direction direction, Possibilities possibilities, boolean surface, boolean silence) {
         this.direction = direction;
         this.possibilities = possibilities;
+        this.surface = surface;
+        this.silence = silence;
     }
 }
 
