@@ -9,7 +9,7 @@ class Coord {
         this.y = y;
     }
 
-    String getMove(Coord target) {
+    String getCardinalPoint(Coord target) {
         if (x < target.x) {
             return "E";
         } else if (x > target.x) {
@@ -87,7 +87,8 @@ enum CellType {
 
 class Board {
     List<List<CellType>> cells;
-    boolean[][] visited = new boolean[15][15];
+    boolean[][] visited;
+    int size;
 
     Board(List<String> lines) {
 
@@ -103,6 +104,8 @@ class Board {
             }
             cells.add(row);
         }
+        size = cells.size();
+        visited = new boolean[size][size];
     }
 
     CellType getCell(int x, int y) {
@@ -115,30 +118,71 @@ class Board {
 
     List<Coord> getAvailableMoves(Coord current) {
         List<Coord> result = new ArrayList<>();
-        if (current.x > 0 && getCell(current.x - 1, current.y) != CellType.ISLAND && !visited[current.y][current.x - 1]) {
-            result.add(new Coord(current.x - 1, current.y));
+
+//        X decreasing (W)
+        boolean isAvailable = true;
+        int d = 1;
+        while (isAvailable && d <= 4) {
+            if (!(current.x >= d && getCell(current.x - d, current.y) != CellType.ISLAND && !visited[current.y][current.x - d])) {
+                isAvailable = false;
+            }
+            else {
+                result.add(new Coord(current.x - d, current.y));
+                d++;
+            }
         }
-        if (current.x < 14 && getCell(current.x + 1, current.y) != CellType.ISLAND && !visited[current.y][current.x + 1]) {
-            result.add(new Coord(current.x + 1, current.y));
+
+//        X increasing (E)
+        isAvailable = true;
+        d = 1;
+        while (isAvailable && d <= 4) {
+            if (!(current.x < size - d && getCell(current.x + d, current.y) != CellType.ISLAND && !visited[current.y][current.x + d])) {
+                isAvailable = false;
+            }
+            else {
+                result.add(new Coord(current.x + d, current.y));
+                d++;
+            }
         }
-        if (current.y > 0 && getCell(current.x, current.y - 1) != CellType.ISLAND && !visited[current.y - 1][current.x]) {
-            result.add(new Coord(current.x, current.y - 1));
+
+//        Y decreasing (N)
+        isAvailable = true;
+        d = 1;
+        while (isAvailable && d <= 4) {
+            if (!(current.y >= d && getCell(current.x, current.y - d) != CellType.ISLAND && !visited[current.y - d][current.x])) {
+                isAvailable = false;
+            }
+            else {
+                result.add(new Coord(current.x, current.y - d));
+                d++;
+            }
         }
-        if (current.y < 14 && getCell(current.x, current.y + 1) != CellType.ISLAND && !visited[current.y + 1][current.x]) {
-            result.add(new Coord(current.x, current.y + 1));
+
+//        Y increasing (S)
+        isAvailable = true;
+        d = 1;
+        while (isAvailable && d <= 4) {
+            if (!(current.y < size - d && getCell(current.x, current.y + d) != CellType.ISLAND && !visited[current.y + d][current.x])) {
+                isAvailable = false;
+            }
+            else {
+                result.add(new Coord(current.x, current.y + d));
+                d++;
+            }
         }
+
         return result;
     }
 
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        for (int j = 0; j < 15; j++) {
-            for (int i = 0; i < 15; i++) {
+        for (int j = 0; j < size; j++) {
+            for (int i = 0; i < size; i++) {
                 CellType c = getCell(i, j);
                 if (c == CellType.WATER && visited[j][i]) {
-                    sb.append("-");
+                    sb.append("*");
                 } else if (c == CellType.WATER && !visited[j][i]) {
-                    sb.append(" ");
+                    sb.append(".");
                 } else {
                     sb.append(c);
                 }
@@ -161,6 +205,10 @@ class Board {
         initialPositions.add(new Coord(8, 7));
         initialPositions.add(new Coord(8, 8));
         initialPositions.add(new Coord(7, 9));
+        initialPositions.add(new Coord(8, 9));
+        initialPositions.add(new Coord(9, 7));
+        initialPositions.add(new Coord(9, 8));
+        initialPositions.add(new Coord(9, 9));
 
         return initialPositions.stream()
                 .filter(pos -> getCell(pos) != CellType.ISLAND)
@@ -251,16 +299,17 @@ class Possibilities {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(count).append(" possible positions\n");
+        System.err.println("|0123456789ABCDE|");
         for (int j = 0; j < size; j++) {
             sb.append("|");
             for (int i = 0; i < size; i++) {
                 if (area[j][i]) {
                     sb.append("x");
                 } else {
-                    sb.append(" ");
+                    sb.append(".");
                 }
             }
-            sb.append("|\n");
+            sb.append("|" + j + "\n");
         }
         return sb.toString();
     }
@@ -452,8 +501,8 @@ class Strategist {
         if (opponentsMoveHistory.size() >= 2) {
             OpponentState previous = opponentsMoveHistory.get(opponentsMoveHistory.size() - 2);
             OpponentState current = opponentsMoveHistory.get(opponentsMoveHistory.size() - 1);
-            Possibilities foo = computeOpponentPositionFromPrevious(previous, current, opponent.direction, opponent.surface);
-            possibilities = possibilities.subtract(foo);
+            Possibilities p = computeOpponentPositionFromPrevious(previous, current, opponent.direction, opponent.surface);
+            possibilities = possibilities.subtract(p);
 //            System.err.println("after previous pos: " + map.size);
 //            System.err.println(map);
         }
@@ -481,35 +530,95 @@ class Strategist {
 //        System.err.println(availableMoves.size() + " available moves");
 
 //        This one should only be called if MOVE
-        Foo foo = parse(opponentRawOrder);
-        OpponentState latestOS = new OpponentState(opponentRawOrder, foo.direction, oppLife);
+        ParserOutput parserOutput = parse(opponentRawOrder);
+        OpponentState latestOS = new OpponentState(opponentRawOrder, parserOutput.direction, oppLife);
         opponentsMoveHistory.add(latestOS);
-        Possibilities opponent = getOpponentLocation(foo);
+        Possibilities opponent = getOpponentLocation(parserOutput);
 
 //        System.err.println(opponent.size + " possible positions");
         System.err.println(opponent);
 
-        if (opponent.count == 1) {
-            Coord opponentPosition = opponent.getPossiblePositions().get(0);
-            System.err.println("Target acquired: " + opponentPosition );
+        Direction directionToTarget = null;
+        Coord opponentPosition = null;
 
+        if (opponent.count > 0 && opponent.count <= 20) {
+            if (opponent.count == 1) {
+                opponentPosition = opponent.getPossiblePositions().get(0);
+                System.err.println("Target acquired: " + opponentPosition);
+            }
+            else {
+                int sumX = 0;
+                int sumY = 0;
+                int averageX;
+                int averageY;
+                for (Coord coord : opponent.getPossiblePositions()) {
+                    sumX += coord.x;
+                    sumY += coord.y;
+                }
+                averageX = sumX / opponent.getPossiblePositions().size();
+                averageY = sumY / opponent.getPossiblePositions().size();
+                opponentPosition = new Coord(averageX, averageY);
+                System.err.println("Average: " + averageX + ", " + averageY);
+            }
+        }
+        if (opponentPosition != null) {
+//            TODO Maybe we could remove the condition current.distance(opponentPosition) > 0 if we can finish the game (more lives than opponent)
+//            TODO this could possibly be improved: if we move then shoot, range is higher than 4
             if (current.distance(opponentPosition) <= 4 && current.distance(opponentPosition) > 0 && torpedoCooldown == 0) {
                 action = " | TORPEDO " + opponentPosition.x + " " + opponentPosition.y;
             }
             else {
                 System.err.println("But too far...");
-                System.err.println(current.getDirection(opponentPosition));
+                directionToTarget = current.getDirection(opponentPosition);
+                System.err.println(directionToTarget);
 //                Need to move towards the opponent
             }
         }
 
-        String response;
+        String response = null;
         if (availableMoves.size() > 0) {
             if (silenceCooldown == 0) {
-                response = "SILENCE " + current.getMove(availableMoves.get(0)) + " 1";
+//                TODO this one is still random
+                response = "SILENCE " + current.getCardinalPoint(availableMoves.get(0)) + " 1";
             }
             else {
-                response = "MOVE " + current.getMove(availableMoves.get(0));
+                if (directionToTarget != null) {
+//                    TODO Actually each of this move could be replaced by a SILENCE 1/2/3/4
+                    if (current.distance(opponentPosition) == 0) {
+//                        TODO Move away
+                    }
+                    if (directionToTarget.xVar > 0) {
+                        Optional<Coord> coord = availableMoves.stream().filter(c -> c.x > current.x).findAny();
+                        if (coord.isPresent()) {
+                            response = "MOVE " + current.getCardinalPoint(coord.get());
+                            System.err.println("Trying to get closer to the target: E");
+                        }
+                    }
+                    if (response == null && directionToTarget.xVar < 0) {
+                        Optional<Coord> coord = availableMoves.stream().filter(c -> c.x < current.x).findAny();
+                        if (coord.isPresent()) {
+                            response = "MOVE " + current.getCardinalPoint(coord.get());
+                            System.err.println("Trying to get closer to the target: W");
+                        }
+                    }
+                    if (response == null && directionToTarget.yVar > 0) {
+                        Optional<Coord> coord = availableMoves.stream().filter(c -> c.y > current.y).findAny();
+                        if (coord.isPresent()) {
+                            response = "MOVE " + current.getCardinalPoint(coord.get());
+                            System.err.println("Trying to get closer to the target: S");
+                        }
+                    }
+                    if (response == null && directionToTarget.yVar < 0) {
+                        Optional<Coord> coord = availableMoves.stream().filter(c -> c.y < current.y).findAny();
+                        if (coord.isPresent()) {
+                            response = "MOVE " + current.getCardinalPoint(coord.get());
+                            System.err.println("Trying to get closer to the target: N");
+                        }
+                    }
+                }
+                if (response == null) {
+                    response = "MOVE " + current.getCardinalPoint(availableMoves.get(0));
+                }
                 response += getLoadAction() + action;
             }
         } else {
@@ -522,7 +631,7 @@ class Strategist {
 //        else {
 //            System.out.println("TORPEDO 0 7");
 //        }
-        return response;
+        return response + " | MSG BOOM: " + opponent.count;
     }
 
     void computeVariations(Direction opponentDirection) {
@@ -540,7 +649,7 @@ class Strategist {
 
         //        TODO This needs to be improved to take previous positions into consideration.
         //         The new zone can never be larger than the previous one, except if the opponent used silence
-        boolean[][] area = new boolean[15][15];
+        boolean[][] area = new boolean[board.size][board.size];
         int count = 0;
 //        System.err.println("XVar: " + opponentXVariation);
 //        System.err.println("YVar: " + opponentYVariation);
@@ -567,7 +676,7 @@ class Strategist {
                     System.err.println("BIM right in the middle !!!");
                 }
                 else {
-                    System.err.println("BIM one of the four positions around the bomb");
+                    System.err.println("BIM one of the 8 positions around the bomb");
                 }
         }
 
@@ -578,10 +687,10 @@ class Strategist {
 //            If direction is null, it means the opponent has just played silence or surface.
             if (surface) {
                 return previous.possibilities;
-        }
+            }
             else {
                 return previous.possibilities.spread(4);
-    }
+            }
         }
     }
 

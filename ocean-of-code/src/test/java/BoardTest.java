@@ -3,6 +3,7 @@ import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class BoardTest extends TestCase {
     /**
@@ -33,5 +34,19 @@ public class BoardTest extends TestCase {
         board.convertSectorToArea(1);
         board.convertSectorToArea(3);
         board.convertSectorToArea(9);
+    }
+
+    public void testGetAvailableMoves() {
+        List<String> input = new ArrayList<>();
+        input.add(".x....");
+        input.add("...x..");
+        input.add("...x..");
+        input.add("......");
+        input.add("......");
+        input.add("......");
+        Board board = new Board(input);
+        Coord current = new Coord(0, 0);
+
+        assertEquals(4, board.getAvailableMoves(current).size());
     }
 }
