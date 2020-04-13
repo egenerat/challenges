@@ -11,13 +11,13 @@ class Coord {
 
     String getMove(Coord target) {
         if (x < target.x) {
-            return "MOVE E";
+            return "E";
         } else if (x > target.x) {
-            return "MOVE W";
+            return "W";
         } else if (y < target.y) {
-            return "MOVE S";
+            return "S";
         } else {
-            return "MOVE N";
+            return "N";
         }
     }
 
@@ -402,8 +402,8 @@ class Strategist {
         String loadAction;
         if (torpedoCooldown > 0) {
             loadAction = " TORPEDO";
-        } else if (sonarCooldown > 0) {
-            loadAction = " SONAR";
+//        } else if (sonarCooldown > 0) {
+//            loadAction = " SONAR";
         } else if (silenceCooldown > 0) {
             loadAction = " SILENCE";
         } else {
@@ -437,7 +437,7 @@ class Strategist {
         return new Possibilities(map, count);
     }
 
-    Possibilities getOpponentLocation(Foo opponent) {
+    Possibilities getOpponentLocation(ParserOutput opponent) {
         if (opponent.direction != null) {
             computeVariations(opponent.direction);
         }
@@ -450,16 +450,14 @@ class Strategist {
 //        System.err.println(map);
 
         if (opponentsMoveHistory.size() >= 2) {
-            Possibilities previousPossibilities = opponentsMoveHistory.get(opponentsMoveHistory.size() - 2).possibilities;
-//            System.err.println("Previous map");
-//            System.err.println(previousMap);
-            possibilities = possibilities.subtract(computeOpponentPositionFromPrevious(opponentsMoveHistory.get(opponentsMoveHistory.size() - 2),
-                    opponent.direction, opponent.surface));
+            OpponentState previous = opponentsMoveHistory.get(opponentsMoveHistory.size() - 2);
+            OpponentState current = opponentsMoveHistory.get(opponentsMoveHistory.size() - 1);
+            Possibilities foo = computeOpponentPositionFromPrevious(previous, current, opponent.direction, opponent.surface);
+            possibilities = possibilities.subtract(foo);
 //            System.err.println("after previous pos: " + map.size);
 //            System.err.println(map);
         }
 
-//        opponentsMoveHistory.get(opponentsMoveHistory.size() - 1), opponent.direction
         if (opponent.possibilities != null) {
             possibilities = possibilities.subtract(opponent.possibilities);
 //            System.err.println("after parse: " + map.size);
@@ -469,6 +467,8 @@ class Strategist {
 
 //        Save the computed map
         opponentsMoveHistory.get(opponentsMoveHistory.size() - 1).setComputed(possibilities);
+
+//        Debug
 //        for (OpponentState s : opponentsMoveHistory) {
 //            System.err.println(s.command + " " + s.possiblePositions.size);
 //        }
@@ -493,7 +493,7 @@ class Strategist {
             Coord opponentPosition = opponent.getPossiblePositions().get(0);
             System.err.println("Target acquired: " + opponentPosition );
 
-            if (current.distance(opponentPosition) < 4 && current.distance(opponentPosition) > 0 && torpedoCooldown == 0) {
+            if (current.distance(opponentPosition) <= 4 && current.distance(opponentPosition) > 0 && torpedoCooldown == 0) {
                 action = " | TORPEDO " + opponentPosition.x + " " + opponentPosition.y;
             }
             else {
@@ -505,7 +505,13 @@ class Strategist {
 
         String response;
         if (availableMoves.size() > 0) {
-            response = current.getMove(availableMoves.get(0)) + getLoadAction() + action;
+            if (silenceCooldown == 0) {
+                response = "SILENCE " + current.getMove(availableMoves.get(0)) + " 1";
+            }
+            else {
+                response = "MOVE " + current.getMove(availableMoves.get(0));
+                response += getLoadAction() + action;
+            }
         } else {
             response = "SURFACE";
             board.resetVisited();
@@ -554,8 +560,17 @@ class Strategist {
         return new Possibilities(area, count);
     }
 
-    Possibilities computeOpponentPositionFromPrevious(OpponentState previous, Direction direction, boolean surface) {
-//        System.err.println(previous.possiblePositions);
+    Possibilities computeOpponentPositionFromPrevious(OpponentState previous, OpponentState current, Direction direction, boolean surface) {
+        int lostLives = previous.oppLife - current.oppLife;
+        if (!surface && lostLives > 0) {
+                if (lostLives == 2) {
+                    System.err.println("BIM right in the middle !!!");
+                }
+                else {
+                    System.err.println("BIM one of the four positions around the bomb");
+                }
+        }
+
         if (direction != null) {
             return previous.possibilities.shift(direction);
         }
@@ -570,7 +585,7 @@ class Strategist {
         }
     }
 
-    Foo parse(String opponentOrdersText) {
+    ParserOutput parse(String opponentOrdersText) {
         Direction opponentDirection = null;
         Possibilities possibilities = new Possibilities();
         boolean surface = false;
@@ -606,17 +621,17 @@ class Strategist {
         }
 //        System.err.println("End of parse:");
 //        System.err.println(map);
-        return new Foo(opponentDirection, possibilities, surface, silence);
+        return new ParserOutput(opponentDirection, possibilities, surface, silence);
     }
 }
 
-class Foo {
+class ParserOutput {
     Direction direction;
     Possibilities possibilities;
     boolean surface;
     boolean silence;
 
-    public Foo(Direction direction, Possibilities possibilities, boolean surface, boolean silence) {
+    public ParserOutput(Direction direction, Possibilities possibilities, boolean surface, boolean silence) {
         this.direction = direction;
         this.possibilities = possibilities;
         this.surface = surface;
