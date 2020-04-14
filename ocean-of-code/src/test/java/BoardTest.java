@@ -31,9 +31,9 @@ public class BoardTest extends TestCase {
 //        Y range: 0 -> 4
 //        X range: 10 -> 14
 //        Y range: 10 -> 14
-        board.convertSectorToArea(1);
-        board.convertSectorToArea(3);
-        board.convertSectorToArea(9);
+//        board.convertSectorToArea(1);
+//        board.convertSectorToArea(3);
+//        board.convertSectorToArea(9);
     }
 
     public void testGetAvailableMoves() {
