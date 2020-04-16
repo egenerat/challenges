@@ -227,14 +227,14 @@ class Board {
 
     Possibilities drawDiamond(Coord target, int distance) {
 //       TODO This is a simple approximation, but the torpedo cannot fly over an island, it needs to go around
-        boolean[][] diamond = new boolean[15][15];
+        boolean[][] diamond = new boolean[size][size];
         int counter = 0;
         for (int diffY = -distance; diffY <= distance; diffY++) {
             int absDiffY = Math.abs(diffY);
             for (int diffX = -distance + absDiffY; diffX <= distance - absDiffY; diffX++) {
                 int x = target.x + diffX;
                 int y = target.y + diffY;
-                if (x >= 0 && x <= 14 && y >= 0 && y <= 14) {
+                if (x >= 0 && x < size && y >= 0 && y < size) {
                     diamond[target.y + diffY][target.x + diffX] = true;
                     counter++;
                 }
@@ -250,7 +250,7 @@ class Board {
     }
 
     Possibilities convertSectorToArea(int sectorNum) {
-        boolean[][] area = new boolean[15][15];
+        boolean[][] area = new boolean[size][size];
         int possibleCellCount = 0;
 //        As sectorNum is between 1 and 9, to have it between 0 and 8
         int horizontalZone = (sectorNum - 1) % 3;
@@ -264,10 +264,8 @@ class Board {
 //        System.err.println("Y range: " + beginY + " -> " + endY);
         for (int j = beginY; j <= endY; j++) {
             for (int i = beginX; i <= endX; i++) {
-                if (getCell(i, j) != CellType.ISLAND) {
-                    area[j][i] = true;
-                    possibleCellCount++;
-                }
+                area[j][i] = true;
+                possibleCellCount++;
             }
         }
         return new Possibilities(area, possibleCellCount);
@@ -279,7 +277,7 @@ class Possibilities {
     int count;
 
 //    For the tests, we want to create smaller maps
-    int size;
+    private int size;
 
     Possibilities() {
         this.size = 15;

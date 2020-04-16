@@ -3,6 +3,7 @@ import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class BoardTest extends TestCase {
@@ -24,16 +25,30 @@ public class BoardTest extends TestCase {
     }
 
     public void testConvertSectorToArea() {
-        Board board = new Board(new ArrayList<>());
-//        X range: 0 -> 4
-//        Y range: 0 -> 4
-//        X range: 10 -> 14
-//        Y range: 0 -> 4
-//        X range: 10 -> 14
-//        Y range: 10 -> 14
-//        board.convertSectorToArea(1);
-//        board.convertSectorToArea(3);
-//        board.convertSectorToArea(9);
+        List<String> input = new ArrayList<>();
+        for (int i=0; i<15; i++) {
+            input.add("...............");
+        }
+        Board board = new Board(input);
+        boolean[][] expectedArea = {
+                {false, false, false, false, false, false, false, false, false, false, true, true, true, true, true},
+                {false, false, false, false, false, false, false, false, false, false, true, true, true, true, true},
+                {false, false, false, false, false, false, false, false, false, false, true, true, true, true, true},
+                {false, false, false, false, false, false, false, false, false, false, true, true, true, true, true},
+                {false, false, false, false, false, false, false, false, false, false, true, true, true, true, true},
+                {false, false, false, false, false, false, false, false, false, false, false, false, false, false, false},
+                {false, false, false, false, false, false, false, false, false, false, false, false, false, false, false},
+                {false, false, false, false, false, false, false, false, false, false, false, false, false, false, false},
+                {false, false, false, false, false, false, false, false, false, false, false, false, false, false, false},
+                {false, false, false, false, false, false, false, false, false, false, false, false, false, false, false},
+                {false, false, false, false, false, false, false, false, false, false, false, false, false, false, false},
+                {false, false, false, false, false, false, false, false, false, false, false, false, false, false, false},
+                {false, false, false, false, false, false, false, false, false, false, false, false, false, false, false},
+                {false, false, false, false, false, false, false, false, false, false, false, false, false, false, false},
+                {false, false, false, false, false, false, false, false, false, false, false, false, false, false, false}
+        };
+        assertTrue(Arrays.deepEquals(expectedArea, board.convertSectorToArea(3).area));
+        assertEquals(25, board.convertSectorToArea(3).count);
     }
 
     public void testGetAvailableMoves() {
