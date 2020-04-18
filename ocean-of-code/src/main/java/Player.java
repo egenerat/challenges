@@ -449,11 +449,11 @@ class Possibilities {
                     value |= area[j][i+1];
                 }
                 if (value) {
-                    result[j][i] = true;
-                    count++;
+                            result[j][i] = true;
+                            count++;
+                        }
+                    }
                 }
-            }
-        }
         return new Possibilities(result, count);
     }
 
@@ -575,7 +575,7 @@ class Strategist {
         return new Possibilities(map, count);
     }
 
-    Possibilities getOpponentLocation(ParserOutput opponent) {
+    Possibilities getOpponentLocation() {
         if (opponent.direction != null) {
             computeVariations(opponent.direction);
         }
@@ -619,29 +619,30 @@ class Strategist {
 //        System.err.println(availableMoves.size() + " available moves");
 
         List<Action> actions = parse(opponentRawOrder);
-        Direction opponentDirection = null;
-        for (Action a: actions) {
-            switch (a.toString()) {
-                case "MoveAction":
-                    opponentDirection = ((MoveAction) a).direction;
-                    break;
-                case "SilenceAction":
-                    break;
-                case "TorpedoAction":
-                    break;
-                case "SurfaceAction":
-                    board.convertSectorToArea(Integer.parseInt(splitOrder[1]));
-                    break;
-                case "MineAction":
-                    break;
-                case "":
-                    break;
-            }
-        }
+//        Direction opponentDirection = null;
+//        for (Action a: actions) {
+//            if (a instanceof MoveAction) {
+//                opponentDirection = ((MoveAction) a).direction;
+//            }
+//            else if (a instanceof SilenceAction) {
+//
+//            }
+//            else if (a instanceof TorpedoAction) {
+//
+//            }
+//            else if (a instanceof SurfaceAction) {
+//                board.convertSectorToArea();
+//            }
+//            else if (a instanceof MineAction) {
+//            }
+//            else {
+//
+//            }
+//        }
 
-        OpponentState latestOS = new OpponentState(opponentRawOrder, parserOutput.direction, oppLife);
-        opponentsMoveHistory.add(latestOS);
-        Possibilities opponent = getOpponentLocation(parserOutput);
+        OpponentState currentOS = new OpponentState(opponentRawOrder, null, oppLife);
+        opponentsMoveHistory.add(currentOS);
+        Possibilities opponent = getOpponentLocation();
 
 //        System.err.println(opponent.size + " possible positions");
         System.err.println(opponent);
@@ -780,12 +781,12 @@ class Strategist {
     Possibilities computeOpponentPositionFromPrevious(OpponentState previous, OpponentState current, Direction direction, boolean surface) {
         int lostLives = previous.oppLife - current.oppLife;
         if (!surface && lostLives > 0) {
-                if (lostLives == 2) {
-                    System.err.println("BIM right in the middle !!!");
-                }
-                else {
-                    System.err.println("BIM one of the 8 positions around the bomb");
-                }
+            if (lostLives == 2) {
+                System.err.println("BIM right in the middle !!!");
+            }
+            else {
+                System.err.println("BIM one of the 8 positions around the bomb");
+            }
         }
 
         if (direction != null) {
@@ -845,20 +846,6 @@ class Strategist {
             }
         }
         return result;
-    }
-}
-
-class ParserOutput {
-    Direction direction;
-    Possibilities possibilities;
-    boolean surface;
-    boolean silence;
-
-    public ParserOutput(Direction direction, Possibilities possibilities, boolean surface, boolean silence) {
-        this.direction = direction;
-        this.possibilities = possibilities;
-        this.surface = surface;
-        this.silence = silence;
     }
 }
 
