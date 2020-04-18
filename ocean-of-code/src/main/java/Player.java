@@ -341,23 +341,20 @@ class Possibilities {
     Possibilities spread(int distance) {
         boolean[][] result = new boolean[size][size];
         int count = 0;
+//        We iterate over the new map
         for (int j = 0; j < size; j++) {
             for (int i = 0; i < size; i++) {
-                boolean value = area[j][i];
-//                TODO: only works if distance = 1
-                if (j > 0) {
-                    value |= area[j-1][i];
+//                If the position i,j is within distance of a possible one, we set it to true
+                boolean newValue = false;
+                for (int y = Math.max(0, j - distance); y <= Math.min(size - 1, j + distance); y++) {
+                    boolean oldValue = area[y][i];
+                    newValue = newValue || (oldValue && y != j);
                 }
-                if (j < size - 1) {
-                    value |= area[j+1][i];
+                for (int x = Math.max(0, i - distance); x <= Math.min(size - 1, i + distance); x++) {
+                    boolean oldValue = area[j][x];
+                    newValue = newValue || (oldValue && x != i);
                 }
-                if (i > 0) {
-                    value |= area[j][i-1];
-                }
-                if (i < size - 1) {
-                    value |= area[j][i+1];
-                }
-                if (value) {
+                if (newValue) {
                     result[j][i] = true;
                     count++;
                 }
