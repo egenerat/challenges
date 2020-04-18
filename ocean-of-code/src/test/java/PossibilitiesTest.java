@@ -54,11 +54,11 @@ public class PossibilitiesTest extends TestCase {
         Possibilities original = new Possibilities(originalArea, 2);
         boolean[][] expectedArea = {
                 { false, true, false, false },
-                { true, true, true, false },
+                { true, false, true, false },
                 { false, true, false, true },
-                { false, false, true, true }
+                { false, false, true, false }
         };
-        Possibilities expected = new Possibilities(expectedArea, 8);
+        Possibilities expected = new Possibilities(expectedArea, 6);
         assertEquals(expected, original.spread(1));
     }
 
@@ -72,11 +72,29 @@ public class PossibilitiesTest extends TestCase {
         Possibilities original = new Possibilities(originalArea, 2);
         boolean[][] expectedArea = {
                 { false, true, false, false },
-                { true, true, true, true },
+                { true, false, true, true },
                 { false, true, false, true },
-                { false, true, true, true }
+                { false, true, true, false }
         };
-        Possibilities expected = new Possibilities(expectedArea, 10);
+        Possibilities expected = new Possibilities(expectedArea, 8);
         assertEquals(expected, original.spread(2));
+    }
+
+    public void testSpreadUsualCaseDistanceCannotStaySamePosition() {
+        boolean[][] originalArea = {
+                { false, false, false, false },
+                { false, true, true, false },
+                { false, false, false, false },
+                { false, false, false, false }
+        };
+        Possibilities original = new Possibilities(originalArea, 2);
+        boolean[][] expectedArea = {
+                { false, true, true, false },
+                { true, true, true, true },
+                { false, true, true, false },
+                { false, false, false, false }
+        };
+        Possibilities expected = new Possibilities(expectedArea, 8);
+        assertEquals(expected, original.spread(1));
     }
 }

@@ -348,13 +348,12 @@ class Possibilities {
                 boolean newValue = false;
                 for (int y = Math.max(0, j - distance); y <= Math.min(size - 1, j + distance); y++) {
                     boolean oldValue = area[y][i];
-                    newValue = newValue || oldValue;
+                    newValue = newValue || (oldValue && y != j);
                 }
                 for (int x = Math.max(0, i - distance); x <= Math.min(size - 1, i + distance); x++) {
                     boolean oldValue = area[j][x];
-                    newValue = newValue || oldValue;
+                    newValue = newValue || (oldValue && x != i);
                 }
-//                        if (x != i && y != j) {
                 if (newValue) {
                     result[j][i] = true;
                     count++;
