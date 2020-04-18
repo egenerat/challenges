@@ -1,5 +1,94 @@
 import java.util.*;
 
+enum ActionType {
+    MOVE,
+    SURFACE,
+    SILENCE,
+    SONAR,
+    TORPEDO,
+    MINE,
+    TRIGGER
+}
+
+abstract class Action {
+    ActionType type;
+
+    Action(ActionType type) {
+        this.type = type;
+    }
+}
+
+abstract class CoordAction extends Action {
+    Coord target;
+
+    CoordAction(ActionType type, Coord target) {
+        super(type);
+        this.target = target;
+    }
+}
+
+abstract class ZoneAction extends Action {
+    int zone;
+
+    ZoneAction(ActionType type, int zone) {
+        super(type);
+        this.zone = zone;
+    }
+}
+
+// MOVE N
+class MoveAction extends Action {
+    Direction direction;
+
+    MoveAction(Direction direction) {
+        super(ActionType.MOVE);
+        this.direction = direction;
+    }
+}
+
+// SURFACE 3
+class SurfaceAction extends ZoneAction {
+    SurfaceAction(int zone) {
+        super(ActionType.SURFACE, zone);
+    }
+}
+
+// SONAR 4
+class SonarAction extends ZoneAction {
+    public SonarAction(int zone) {
+        super(ActionType.SONAR, zone);
+    }
+}
+
+// SILENCE
+class SilenceAction extends Action {
+    public SilenceAction() {
+        super(ActionType.SILENCE);
+    }
+}
+
+// TORPEDO 3 5
+class TorpedoAction extends CoordAction {
+    public TorpedoAction(Coord target) {
+        super(ActionType.TORPEDO, target);
+    }
+}
+
+// MINE
+class MineAction extends Action {
+    public MineAction() {
+        super(ActionType.MINE);
+    }
+}
+
+// TRIGGER 3 5
+class TriggerAction extends CoordAction {
+    public TriggerAction(Coord target) {
+        super(ActionType.TRIGGER, target);
+    }
+}
+
+
 class Coord {
     final int x;
     final int y;
@@ -44,16 +133,16 @@ class Direction {
         yVar = 0;
         switch (directionLetter) {
             case "N":
-                yVar--;
+                yVar = -1;
                 break;
             case "E":
-                xVar++;
+                xVar = 1;
                 break;
             case "S":
-                yVar++;
+                yVar = 1;
                 break;
             case "W":
-                xVar--;
+                xVar = -1;
                 break;
         }
     }
@@ -358,11 +447,11 @@ class Possibilities {
                     value |= area[j][i+1];
                 }
                 if (value) {
-                    result[j][i] = true;
-                    count++;
+                            result[j][i] = true;
+                            count++;
+                        }
+                    }
                 }
-            }
-        }
         return new Possibilities(result, count);
     }
 
@@ -484,7 +573,7 @@ class Strategist {
         return new Possibilities(map, count);
     }
 
-    Possibilities getOpponentLocation(ParserOutput opponent) {
+    Possibilities getOpponentLocation() {
         if (opponent.direction != null) {
             computeVariations(opponent.direction);
         }
@@ -527,11 +616,31 @@ class Strategist {
         String action = "";
 //        System.err.println(availableMoves.size() + " available moves");
 
-//        This one should only be called if MOVE
-        ParserOutput parserOutput = parse(opponentRawOrder);
-        OpponentState latestOS = new OpponentState(opponentRawOrder, parserOutput.direction, oppLife);
-        opponentsMoveHistory.add(latestOS);
-        Possibilities opponent = getOpponentLocation(parserOutput);
+        List<Action> actions = parse(opponentRawOrder);
+//        Direction opponentDirection = null;
+//        for (Action a: actions) {
+//            if (a instanceof MoveAction) {
+//                opponentDirection = ((MoveAction) a).direction;
+//            }
+//            else if (a instanceof SilenceAction) {
+//
+//            }
+//            else if (a instanceof TorpedoAction) {
+//
+//            }
+//            else if (a instanceof SurfaceAction) {
+//                board.convertSectorToArea();
+//            }
+//            else if (a instanceof MineAction) {
+//            }
+//            else {
+//
+//            }
+//        }
+
+        OpponentState currentOS = new OpponentState(opponentRawOrder, null, oppLife);
+        opponentsMoveHistory.add(currentOS);
+        Possibilities opponent = getOpponentLocation();
 
 //        System.err.println(opponent.size + " possible positions");
         System.err.println(opponent);
@@ -670,12 +779,12 @@ class Strategist {
     Possibilities computeOpponentPositionFromPrevious(OpponentState previous, OpponentState current, Direction direction, boolean surface) {
         int lostLives = previous.oppLife - current.oppLife;
         if (!surface && lostLives > 0) {
-                if (lostLives == 2) {
-                    System.err.println("BIM right in the middle !!!");
-                }
-                else {
-                    System.err.println("BIM one of the 8 positions around the bomb");
-                }
+            if (lostLives == 2) {
+                System.err.println("BIM right in the middle !!!");
+            }
+            else {
+                System.err.println("BIM one of the 8 positions around the bomb");
+            }
         }
 
         if (direction != null) {
@@ -692,57 +801,49 @@ class Strategist {
         }
     }
 
-    ParserOutput parse(String opponentOrdersText) {
-        Direction opponentDirection = null;
-        Possibilities possibilities = new Possibilities();
-        boolean surface = false;
-        boolean silence = false;
-
+    List<Action> parse(String opponentOrdersText) {
+        List<Action> result = new ArrayList<>();
 //       If we start, the first opponent's order is "NA"
         if (!opponentOrdersText.equals("NA")) {
 //            System.err.println(opponentOrdersText);
             String[] opponentsOrders = opponentOrdersText.split("\\|");
             for (String order : opponentsOrders) {
                 String[] splitOrder = order.split(" ");
-                if (splitOrder[0].equals("MOVE")) {
-                    opponentDirection = new Direction(splitOrder[1]);
-                }
-                else if (splitOrder[0].equals("TORPEDO")) {
-//                    System.err.println("/!\\ BOOOOOOOMMMMMMMM");
-                    int x = Integer.parseInt(splitOrder[1]);
-                    int y = Integer.parseInt(splitOrder[2]);
-//                    System.err.println("Target: " + x + ", " + y);
-                    possibilities = board.findTorpedoLaunchArea(new Coord(x, y));
-                }
-                else if (splitOrder[0].equals("SURFACE")) {
-//                    System.err.println("Opponent has surfaced in : " + splitOrder[1]);
-                    possibilities = board.convertSectorToArea(Integer.parseInt(splitOrder[1]));
-                    surface = true;
-//                    System.err.println(map);
-                }
-                else if (splitOrder[0].equals("SILENCE")) {
-                    System.err.println("Silence...");
-                    silence = true;
+                int x;
+                int y;
+                switch (splitOrder[0]) {
+                    case "MOVE":
+                        result.add(new MoveAction(new Direction(splitOrder[1])));
+                        break;
+                    case "TORPEDO":
+                        x = Integer.parseInt(splitOrder[1]);
+                        y = Integer.parseInt(splitOrder[2]);
+                        result.add(new TorpedoAction(new Coord(x, y)));
+                        break;
+                    case "SURFACE":
+                        result.add(new SurfaceAction(Integer.parseInt(splitOrder[1])));
+                        break;
+                    case "SILENCE":
+                        result.add(new SilenceAction());
+                        break;
+                    case "SONAR":
+                        result.add(new SonarAction(Integer.parseInt(splitOrder[1])));
+                        break;
+                    case "MINE":
+                        result.add(new MineAction());
+                        break;
+                    case "TRIGGER":
+                        x = Integer.parseInt(splitOrder[1]);
+                        y = Integer.parseInt(splitOrder[2]);
+                        result.add(new TriggerAction(new Coord(x, y)));
+                        break;
+                    default:
+                        System.err.println("Action not implemented: " + splitOrder[0]);
+                        break;
                 }
             }
         }
-//        System.err.println("End of parse:");
-//        System.err.println(map);
-        return new ParserOutput(opponentDirection, possibilities, surface, silence);
-    }
-}
-
-class ParserOutput {
-    Direction direction;
-    Possibilities possibilities;
-    boolean surface;
-    boolean silence;
-
-    public ParserOutput(Direction direction, Possibilities possibilities, boolean surface, boolean silence) {
-        this.direction = direction;
-        this.possibilities = possibilities;
-        this.surface = surface;
-        this.silence = silence;
+        return result;
     }
 }
 
