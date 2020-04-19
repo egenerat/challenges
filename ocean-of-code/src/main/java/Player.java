@@ -25,7 +25,7 @@ class Coord {
         return "Coord " + x + "," + y;
     }
 
-//    TODO does not take islands into consideration
+    //    TODO does not take islands into consideration
     int distance(Coord other) {
         return Math.abs(x - other.x) + Math.abs(y - other.y);
     }
@@ -125,8 +125,7 @@ class Board {
         while (isAvailable && d <= distance) {
             if (!(current.x >= d && getCell(current.x - d, current.y) != CellType.ISLAND && !visited[current.y][current.x - d])) {
                 isAvailable = false;
-            }
-            else {
+            } else {
                 result.add(new Coord(current.x - d, current.y));
                 d++;
             }
@@ -138,8 +137,7 @@ class Board {
         while (isAvailable && d <= 4) {
             if (!(current.x < size - d && getCell(current.x + d, current.y) != CellType.ISLAND && !visited[current.y][current.x + d])) {
                 isAvailable = false;
-            }
-            else {
+            } else {
                 result.add(new Coord(current.x + d, current.y));
                 d++;
             }
@@ -151,8 +149,7 @@ class Board {
         while (isAvailable && d <= 4) {
             if (!(current.y >= d && getCell(current.x, current.y - d) != CellType.ISLAND && !visited[current.y - d][current.x])) {
                 isAvailable = false;
-            }
-            else {
+            } else {
                 result.add(new Coord(current.x, current.y - d));
                 d++;
             }
@@ -164,8 +161,7 @@ class Board {
         while (isAvailable && d <= 4) {
             if (!(current.y < size - d && getCell(current.x, current.y + d) != CellType.ISLAND && !visited[current.y + d][current.x])) {
                 isAvailable = false;
-            }
-            else {
+            } else {
                 result.add(new Coord(current.x, current.y + d));
                 d++;
             }
@@ -276,13 +272,13 @@ class Possibilities {
     boolean[][] area;
     int count;
 
-//    For the tests, we want to create smaller maps
+    //    For the tests, we want to create smaller maps
     private int size;
 
     Possibilities() {
         this.size = 15;
         this.area = new boolean[size][size];
-        for (boolean[] row: area) {
+        for (boolean[] row : area) {
             Arrays.fill(row, true);
         }
         this.count = 225;
@@ -337,7 +333,7 @@ class Possibilities {
         return new Possibilities(result, count);
     }
 
-// This method will be useful to extend the possible zone in case of silence action
+    // This method will be useful to extend the possible zone in case of silence action
     Possibilities spread(int distance) {
         boolean[][] result = new boolean[size][size];
         int count = 0;
@@ -404,15 +400,14 @@ class Possibilities {
                 }
             }
         }
-        return  possible;
+        return possible;
     }
 
     @Override
     public boolean equals(Object other) {
         if (other == this) {
             return true;
-        }
-        else if (!(other instanceof Possibilities)) {
+        } else if (!(other instanceof Possibilities)) {
             return false;
         }
         Possibilities c = (Possibilities) other;
@@ -439,7 +434,7 @@ class OpponentState {
 
     public void setMyTorpedoAttack(Coord myTorpedoAttack) {
         this.myTorpedoAttack = myTorpedoAttack;
-}
+    }
 }
 
 class Strategist {
@@ -574,8 +569,7 @@ class Strategist {
             if (opponent.count == 1) {
                 opponentPosition = opponent.getPossiblePositions().get(0);
                 System.err.println("Target acquired: " + opponentPosition);
-            }
-            else {
+            } else {
                 int sumX = 0;
                 int sumY = 0;
                 int averageX;
@@ -606,44 +600,44 @@ class Strategist {
 
         String response = null;
         if (availableMoves.size() > 0) {
-                if (directionToTarget != null) {
+            if (directionToTarget != null) {
 //                    TODO Actually each of this move could be replaced by a SILENCE 1/2/3/4
-                    if (current.distance(opponentPosition) == 0) {
+                if (current.distance(opponentPosition) == 0) {
 //                        TODO Move away
-                    }
-                    if (directionToTarget.xVar > 0) {
-                        Optional<Coord> coord = availableMoves.stream().filter(c -> c.x > current.x).findAny();
-                        if (coord.isPresent()) {
+                }
+                if (directionToTarget.xVar > 0) {
+                    Optional<Coord> coord = availableMoves.stream().filter(c -> c.x > current.x).findAny();
+                    if (coord.isPresent()) {
                         response = getMoveOrSilence(current.getCardinalPoint(coord.get()));
-                            System.err.println("Trying to get closer to the target: E");
-                        }
-                    }
-                    if (response == null && directionToTarget.xVar < 0) {
-                        Optional<Coord> coord = availableMoves.stream().filter(c -> c.x < current.x).findAny();
-                        if (coord.isPresent()) {
-                        response = getMoveOrSilence(current.getCardinalPoint(coord.get()));
-                            System.err.println("Trying to get closer to the target: W");
-                        }
-                    }
-                    if (response == null && directionToTarget.yVar > 0) {
-                        Optional<Coord> coord = availableMoves.stream().filter(c -> c.y > current.y).findAny();
-                        if (coord.isPresent()) {
-                        response = getMoveOrSilence(current.getCardinalPoint(coord.get()));
-                            System.err.println("Trying to get closer to the target: S");
-                        }
-                    }
-                    if (response == null && directionToTarget.yVar < 0) {
-                        Optional<Coord> coord = availableMoves.stream().filter(c -> c.y < current.y).findAny();
-                        if (coord.isPresent()) {
-                        response = getMoveOrSilence(current.getCardinalPoint(coord.get()));
-                            System.err.println("Trying to get closer to the target: N");
-                        }
+                        System.err.println("Trying to get closer to the target: E");
                     }
                 }
-                if (response == null) {
+                if (response == null && directionToTarget.xVar < 0) {
+                    Optional<Coord> coord = availableMoves.stream().filter(c -> c.x < current.x).findAny();
+                    if (coord.isPresent()) {
+                        response = getMoveOrSilence(current.getCardinalPoint(coord.get()));
+                        System.err.println("Trying to get closer to the target: W");
+                    }
+                }
+                if (response == null && directionToTarget.yVar > 0) {
+                    Optional<Coord> coord = availableMoves.stream().filter(c -> c.y > current.y).findAny();
+                    if (coord.isPresent()) {
+                        response = getMoveOrSilence(current.getCardinalPoint(coord.get()));
+                        System.err.println("Trying to get closer to the target: S");
+                    }
+                }
+                if (response == null && directionToTarget.yVar < 0) {
+                    Optional<Coord> coord = availableMoves.stream().filter(c -> c.y < current.y).findAny();
+                    if (coord.isPresent()) {
+                        response = getMoveOrSilence(current.getCardinalPoint(coord.get()));
+                        System.err.println("Trying to get closer to the target: N");
+                    }
+                }
+            }
+            if (response == null) {
                 response = getMoveOrSilence(current.getCardinalPoint(availableMoves.get(0)));
-                }
-                response += getLoadAction() + action;
+            }
+            response += getLoadAction() + action;
         } else {
             response = "SURFACE";
             board.resetVisited();
@@ -697,22 +691,21 @@ class Strategist {
         int lostLives = previous.oppLife - current.oppLife;
         if (!surface && lostLives > 0) {
             //                    TODO: Retrieve the position of the torpedo we threw
-                if (lostLives == 2) {
-                    System.err.println("BIM right in the middle !!!");
+            if (lostLives == 2) {
+                System.err.println("BIM right in the middle !!!");
+            } else {
 //                    getNeighbours(null);
-                    System.err.println("BIM one of the 8 positions around the bomb");
-                }
+                System.err.println("BIM one of the 8 positions around the bomb");
+            }
         }
 
         if (direction != null) {
             return previous.possibilities.shift(direction);
-        }
-        else {
+        } else {
 //            If direction is null, it means the opponent has just played silence or surface.
             if (surface) {
                 return previous.possibilities;
-            }
-            else {
+            } else {
                 return previous.possibilities.spread(4);
             }
         }
@@ -732,21 +725,18 @@ class Strategist {
                 String[] splitOrder = order.split(" ");
                 if (splitOrder[0].equals("MOVE")) {
                     opponentDirection = new Direction(splitOrder[1]);
-                }
-                else if (splitOrder[0].equals("TORPEDO")) {
+                } else if (splitOrder[0].equals("TORPEDO")) {
 //                    System.err.println("/!\\ BOOOOOOOMMMMMMMM");
                     int x = Integer.parseInt(splitOrder[1]);
                     int y = Integer.parseInt(splitOrder[2]);
 //                    System.err.println("Target: " + x + ", " + y);
                     possibilities = board.findTorpedoLaunchArea(new Coord(x, y));
-                }
-                else if (splitOrder[0].equals("SURFACE")) {
+                } else if (splitOrder[0].equals("SURFACE")) {
 //                    System.err.println("Opponent has surfaced in : " + splitOrder[1]);
                     possibilities = board.convertSectorToArea(Integer.parseInt(splitOrder[1]));
                     surface = true;
 //                    System.err.println(map);
-                }
-                else if (splitOrder[0].equals("SILENCE")) {
+                } else if (splitOrder[0].equals("SILENCE")) {
                     System.err.println("Silence...");
                     silence = true;
                 }
