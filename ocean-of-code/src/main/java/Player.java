@@ -363,6 +363,21 @@ class Possibilities {
         return new Possibilities(result, count);
     }
 
+    //    This method will be used to get the damage zone of a torpedo
+    Possibilities getNeighbours(Coord impact) {
+        boolean[][] result = new boolean[size][size];
+        int count = 0;
+        for (int j = Math.max(0, impact.y - 1); j <= Math.min(size - 1, impact.x + 1); j++) {
+            for (int i = Math.max(0, impact.x - 1); i <= Math.min(size - 1, impact.x + 1); i++) {
+                if (!(j == impact.y && i == impact.x)) {
+                    result[j][i] = true;
+                    count++;
+                }
+            }
+        }
+        return new Possibilities(result, count);
+    }
+
     Possibilities subtract(Possibilities other) {
         boolean[][] result = new boolean[size][size];
         int count = 0;
@@ -669,8 +684,7 @@ class Strategist {
         if (!surface && lostLives > 0) {
                 if (lostLives == 2) {
                     System.err.println("BIM right in the middle !!!");
-                }
-                else {
+//                    getNeighbours(null);
                     System.err.println("BIM one of the 8 positions around the bomb");
                 }
         }

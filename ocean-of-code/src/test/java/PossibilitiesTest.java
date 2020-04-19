@@ -97,4 +97,22 @@ public class PossibilitiesTest extends TestCase {
         Possibilities expected = new Possibilities(expectedArea, 8);
         assertEquals(expected, original.spread(1));
     }
+
+    public void testGetNeighbours() {
+        boolean[][] originalArea = {
+                { false, false, false, false },
+                { false, true, false, false },
+                { false, false, false, false },
+                { false, false, false, false }
+        };
+        Possibilities original = new Possibilities(originalArea, 1);
+        boolean[][] expectedArea = {
+                { true, true, true, false },
+                { true, false, true, false },
+                { true, true, true, false },
+                { false, false, false, false }
+        };
+        Possibilities expected = new Possibilities(expectedArea, 8);
+        assertEquals(expected, original.getNeighbours(new Coord(1, 1)));
+    }
 }
