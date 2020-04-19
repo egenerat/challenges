@@ -62,6 +62,6 @@ public class BoardTest extends TestCase {
         Board board = new Board(input);
         Coord current = new Coord(0, 0);
 
-        assertEquals(4, board.getAvailableMoves(current).size());
+        assertEquals(4, board.getAvailableMoves(current, 4).size());
     }
 }

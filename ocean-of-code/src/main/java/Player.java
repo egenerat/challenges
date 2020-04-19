@@ -116,13 +116,13 @@ class Board {
         return getCell(pos.x, pos.y);
     }
 
-    List<Coord> getAvailableMoves(Coord current) {
+    List<Coord> getAvailableMoves(Coord current, int distance) {
         List<Coord> result = new ArrayList<>();
 
 //        X decreasing (W)
         boolean isAvailable = true;
         int d = 1;
-        while (isAvailable && d <= 4) {
+        while (isAvailable && d <= distance) {
             if (!(current.x >= d && getCell(current.x - d, current.y) != CellType.ISLAND && !visited[current.y][current.x - d])) {
                 isAvailable = false;
             }
@@ -425,6 +425,7 @@ class OpponentState {
     Direction direction;
     Possibilities possibilities;
     int oppLife;
+    Coord myTorpedoAttack;
 
     OpponentState(String command, Direction direction, int oppLife) {
         this.command = command;
@@ -435,6 +436,10 @@ class OpponentState {
     void setComputed(Possibilities possibilities) {
         this.possibilities = possibilities;
     }
+
+    public void setMyTorpedoAttack(Coord myTorpedoAttack) {
+        this.myTorpedoAttack = myTorpedoAttack;
+}
 }
 
 class Strategist {
@@ -534,8 +539,22 @@ class Strategist {
         return possibilities;
     }
 
+    String getMoveOrSilence(String direction) {
+        if (silenceCooldown == 0) {
+            return "SILENCE " + direction + " 1";
+        }
+        else {
+            return "MOVE " + direction;
+        }
+    }
+
     String getMove() {
-        List<Coord> availableMoves = board.getAvailableMoves(current);
+        List<Coord> availableMoves;
+        if (silenceCooldown == 0) {
+            availableMoves = board.getAvailableMoves(current, 4);
+        } else {
+            availableMoves = board.getAvailableMoves(current, 1);
+        }
         String action = "";
 //        System.err.println(availableMoves.size() + " available moves");
 
@@ -576,8 +595,8 @@ class Strategist {
 //            TODO this could possibly be improved: if we move then shoot, range is higher than 4
             if (current.distance(opponentPosition) <= 4 && current.distance(opponentPosition) > 0 && torpedoCooldown == 0) {
                 action = " | TORPEDO " + opponentPosition.x + " " + opponentPosition.y;
-            }
-            else {
+//                setMyTorpedoAttack(new Coord(opponentPosition.x, opponentPosition.y));
+            } else {
                 System.err.println("But too far...");
                 directionToTarget = current.getDirection(opponentPosition);
                 System.err.println(directionToTarget);
@@ -587,11 +606,6 @@ class Strategist {
 
         String response = null;
         if (availableMoves.size() > 0) {
-            if (silenceCooldown == 0) {
-//                TODO this one is still random
-                response = "SILENCE " + current.getCardinalPoint(availableMoves.get(0)) + " 1";
-            }
-            else {
                 if (directionToTarget != null) {
 //                    TODO Actually each of this move could be replaced by a SILENCE 1/2/3/4
                     if (current.distance(opponentPosition) == 0) {
@@ -600,37 +614,36 @@ class Strategist {
                     if (directionToTarget.xVar > 0) {
                         Optional<Coord> coord = availableMoves.stream().filter(c -> c.x > current.x).findAny();
                         if (coord.isPresent()) {
-                            response = "MOVE " + current.getCardinalPoint(coord.get());
+                        response = getMoveOrSilence(current.getCardinalPoint(coord.get()));
                             System.err.println("Trying to get closer to the target: E");
                         }
                     }
                     if (response == null && directionToTarget.xVar < 0) {
                         Optional<Coord> coord = availableMoves.stream().filter(c -> c.x < current.x).findAny();
                         if (coord.isPresent()) {
-                            response = "MOVE " + current.getCardinalPoint(coord.get());
+                        response = getMoveOrSilence(current.getCardinalPoint(coord.get()));
                             System.err.println("Trying to get closer to the target: W");
                         }
                     }
                     if (response == null && directionToTarget.yVar > 0) {
                         Optional<Coord> coord = availableMoves.stream().filter(c -> c.y > current.y).findAny();
                         if (coord.isPresent()) {
-                            response = "MOVE " + current.getCardinalPoint(coord.get());
+                        response = getMoveOrSilence(current.getCardinalPoint(coord.get()));
                             System.err.println("Trying to get closer to the target: S");
                         }
                     }
                     if (response == null && directionToTarget.yVar < 0) {
                         Optional<Coord> coord = availableMoves.stream().filter(c -> c.y < current.y).findAny();
                         if (coord.isPresent()) {
-                            response = "MOVE " + current.getCardinalPoint(coord.get());
+                        response = getMoveOrSilence(current.getCardinalPoint(coord.get()));
                             System.err.println("Trying to get closer to the target: N");
                         }
                     }
                 }
                 if (response == null) {
-                    response = "MOVE " + current.getCardinalPoint(availableMoves.get(0));
+                response = getMoveOrSilence(current.getCardinalPoint(availableMoves.get(0)));
                 }
                 response += getLoadAction() + action;
-            }
         } else {
             response = "SURFACE";
             board.resetVisited();
@@ -680,8 +693,10 @@ class Strategist {
     }
 
     Possibilities computeOpponentPositionFromPrevious(OpponentState previous, OpponentState current, Direction direction, boolean surface) {
+//        It may not work great if the opponent self-inflicts damages
         int lostLives = previous.oppLife - current.oppLife;
         if (!surface && lostLives > 0) {
+            //                    TODO: Retrieve the position of the torpedo we threw
                 if (lostLives == 2) {
                     System.err.println("BIM right in the middle !!!");
 //                    getNeighbours(null);
