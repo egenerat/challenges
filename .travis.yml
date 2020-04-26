@@ -3,5 +3,6 @@ jdk:
   - openjdk8
 script:
   - cd ${TRAVIS_BUILD_DIR}/algo/graph && mvn package
+  - cd ${TRAVIS_BUILD_DIR}/dont-panic && mvn package
   # - cd ${TRAVIS_BUILD_DIR}/kutulu && mvn package
   - cd ${TRAVIS_BUILD_DIR}/ocean-of-code && mvn package
