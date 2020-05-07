@@ -589,7 +589,7 @@ class Strategist {
 //            TODO this could possibly be improved: if we move then shoot, range is higher than 4
             if (current.distance(opponentPosition) <= 4 && current.distance(opponentPosition) > 0 && torpedoCooldown == 0) {
                 action = " | TORPEDO " + opponentPosition.x + " " + opponentPosition.y;
-//                setMyTorpedoAttack(new Coord(opponentPosition.x, opponentPosition.y));
+                latestOS.setMyTorpedoAttack(new Coord(opponentPosition.x, opponentPosition.y));
             } else {
                 System.err.println("But too far...");
                 directionToTarget = current.getDirection(opponentPosition);
@@ -687,15 +687,19 @@ class Strategist {
     }
 
     Possibilities computeOpponentPositionFromPrevious(OpponentState previous, OpponentState current, Direction direction, boolean surface) {
-//        It may not work great if the opponent self-inflicts damages
+
+//        It may not work great if the opponent self-inflicts damages at the same time of our attack
         int lostLives = previous.oppLife - current.oppLife;
         if (!surface && lostLives > 0) {
-            //                    TODO: Retrieve the position of the torpedo we threw
+            Coord myTorpedoAttack = previous.myTorpedoAttack;
+//            else
             if (lostLives == 2) {
                 System.err.println("BIM right in the middle !!!");
+                System.err.println("He was hit on position: " + myTorpedoAttack);
             } else {
-//                    getNeighbours(null);
+                Possibilities p = new Possibilities().getNeighbours(null);
                 System.err.println("BIM one of the 8 positions around the bomb");
+                System.err.println("He was around the position: " + myTorpedoAttack);
             }
         }
 
