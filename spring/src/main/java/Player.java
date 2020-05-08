@@ -26,6 +26,10 @@ class Pellet {
         this.pos = c;
         this.value = value;
     }
+
+    public String toString() {
+        return pos.toString() + "; value: " + value;
+    }
 }
 
 class Pacman {
@@ -53,9 +57,11 @@ class Player {
         }
 
         List<Pacman> myPacmans;
+        List<String> response;
         // game loop
         while (true) {
             myPacmans = new ArrayList<>();
+            response = new ArrayList<>();
             int myScore = in.nextInt();
             int opponentScore = in.nextInt();
             int visiblePacCount = in.nextInt(); // all your pacs and enemy pacs in sight
@@ -73,7 +79,6 @@ class Player {
                 }
             }
             int visiblePelletCount = in.nextInt(); // all pellets in sight
-            Coord target = null;
             List<Pellet> pellets10 = new ArrayList<>();
             List<Pellet> pellets1 = new ArrayList<>();
             for (int i = 0; i < visiblePelletCount; i++) {
@@ -87,35 +92,40 @@ class Player {
                     pellets1.add(new Pellet(new Coord(x, y), value));
                 }
             }
-            Integer minDistance = null;
-            Pacman pacman = myPacmans.get(0);
-            System.err.println("My current position: " + pacman.pos.x + "," + pacman.pos.y);
-            System.err.println("Pellet 10: " + pellets10.size() + ", Pellets 1: " + pellets1.size());
-            for (Pellet p : pellets10) {
-                int tmpDist = p.pos.getFlyingDistance(pacman.pos);
-                System.err.println(p.pos + " distance: " + tmpDist);
-                if (minDistance == null || tmpDist < minDistance) {
-                    minDistance = tmpDist;
-                    target = p.pos;
-                }
-            }
-            if (target == null) {
-                for (Pellet p : pellets1) {
+            for (Pacman pacman: myPacmans) {
+                Pellet targetPellet = null;
+                Integer minDistance = null;
+                System.err.println("My current position: " + pacman.pos.x + "," + pacman.pos.y);
+                System.err.println("Pellet 10: " + pellets10.size() + ", Pellets 1: " + pellets1.size());
+                for (Pellet p : pellets10) {
                     int tmpDist = p.pos.getFlyingDistance(pacman.pos);
                     System.err.println(p.pos + " distance: " + tmpDist);
                     if (minDistance == null || tmpDist < minDistance) {
                         minDistance = tmpDist;
-                        target = p.pos;
+                        targetPellet = p;
                     }
                 }
+                if (targetPellet == null) {
+                    for (Pellet p : pellets1) {
+                        int tmpDist = p.pos.getFlyingDistance(pacman.pos);
+                        System.err.println(p.pos + " distance: " + tmpDist);
+                        if (minDistance == null || tmpDist < minDistance) {
+                            minDistance = tmpDist;
+                            targetPellet = p;
+                        }
+                    }
+                }
+                System.err.println("Closest is : " + targetPellet + " with distance of: " + minDistance);
+                if (targetPellet != null) {
+                    response.add("MOVE " + pacman.id + " " + targetPellet.pos.x + " " + targetPellet.pos.y);
+                }
+                else {
+                    response.add("MOVE " + pacman.id + " 0 0");
+                }
+                pellets10.remove(targetPellet);
+                pellets1.remove(targetPellet);
             }
-            System.err.println("Closest is : " + target + " with distance of: " + minDistance);
-            if (target != null) {
-                System.out.println("MOVE 0 " + target.x + " " + target.y);
-            }
-            else {
-                System.out.println("MOVE 0 0 0");
-            }
+            System.out.println(String.join(" | ", response));
             
         }
     }
