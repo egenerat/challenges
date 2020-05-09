@@ -14,7 +14,7 @@ class Coord {
     }
 
     public String toString() {
-        return x + ", " + y;
+        return x + ":" + y;
     }
 }
 
@@ -28,17 +28,19 @@ class Pellet {
     }
 
     public String toString() {
-        return pos.toString() + "; value: " + value;
+        return pos.toString() + "; " + value;
     }
 }
 
 class Pacman {
     Coord pos;
     int id;
+    int abilityCooldown;
 
-    Pacman(Coord pos, int id) {
+    Pacman(Coord pos, int id, int abilityCooldown) {
         this.pos = pos;
         this.id = id;
+        this.abilityCooldown = abilityCooldown;
     }
 }
 
@@ -53,7 +55,7 @@ class Player {
         }
         for (int i = 0; i < height; i++) {
             String row = in.nextLine(); // one line of the grid: space " " is floor, pound "#" is wall
-            System.err.println(row);
+//            System.err.println(row);
         }
 
         List<Pacman> myPacmans;
@@ -70,12 +72,12 @@ class Player {
                 boolean mine = in.nextInt() != 0; // true if this pac is yours
                 int x = in.nextInt();
                 int y = in.nextInt();
-                String typeId = in.next(); // unused in wood leagues
-                int speedTurnsLeft = in.nextInt(); // unused in wood leagues
-                int abilityCooldown = in.nextInt(); // unused in wood leagues
+                String typeId = in.next();
+                int speedTurnsLeft = in.nextInt();
+                int abilityCooldown = in.nextInt();
 
                 if (mine) {
-                    myPacmans.add(new Pacman(new Coord(x, y), pacId));
+                    myPacmans.add(new Pacman(new Coord(x, y), pacId, abilityCooldown));
                 }
             }
             int visiblePelletCount = in.nextInt(); // all pellets in sight
@@ -93,13 +95,17 @@ class Player {
                 }
             }
             for (Pacman pacman: myPacmans) {
+                if (pacman.abilityCooldown == 0) {
+                    response.add("SPEED " + pacman.id);
+                }
+                else {
                 Pellet targetPellet = null;
                 Integer minDistance = null;
-                System.err.println("My current position: " + pacman.pos.x + "," + pacman.pos.y);
-                System.err.println("Pellet 10: " + pellets10.size() + ", Pellets 1: " + pellets1.size());
+//                    System.err.println("My current position: " + pacman.pos.x + "," + pacman.pos.y);
+//                    System.err.println("Pellet 10: " + pellets10.size() + ", Pellets 1: " + pellets1.size());
                 for (Pellet p : pellets10) {
                     int tmpDist = p.pos.getFlyingDistance(pacman.pos);
-                    System.err.println(p.pos + " distance: " + tmpDist);
+//                        System.err.println(p.pos + " distance: " + tmpDist);
                     if (minDistance == null || tmpDist < minDistance) {
                         minDistance = tmpDist;
                         targetPellet = p;
@@ -108,25 +114,24 @@ class Player {
                 if (targetPellet == null) {
                     for (Pellet p : pellets1) {
                         int tmpDist = p.pos.getFlyingDistance(pacman.pos);
-                        System.err.println(p.pos + " distance: " + tmpDist);
+//                            System.err.println(p.pos + " distance: " + tmpDist);
                         if (minDistance == null || tmpDist < minDistance) {
                             minDistance = tmpDist;
                             targetPellet = p;
                         }
                     }
                 }
-                System.err.println("Closest is : " + targetPellet + " with distance of: " + minDistance);
+//                    System.err.println("Closest is : " + targetPellet + " with distance of: " + minDistance);
                 if (targetPellet != null) {
-                    response.add("MOVE " + pacman.id + " " + targetPellet.pos.x + " " + targetPellet.pos.y);
-                }
-                else {
+                        response.add("MOVE " + pacman.id + " " + targetPellet.pos.x + " " + targetPellet.pos.y + " " + targetPellet);
+                    } else {
                     response.add("MOVE " + pacman.id + " 0 0");
                 }
                 pellets10.remove(targetPellet);
                 pellets1.remove(targetPellet);
             }
+            }
             System.out.println(String.join(" | ", response));
-            
         }
     }
 }
