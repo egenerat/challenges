@@ -58,6 +58,17 @@ class Graph {
         return result;
     }
 
+    List<Zone> getMyZones() {
+        List<Zone> result = new ArrayList<>();
+        for (Zone z: graph.values()) {
+            if (z.ownerId == myId) {
+                result.add(z);
+            }
+        }
+        result.sort((a,b)->b.platinumSource-a.platinumSource);
+        return result;
+    }
+
     List<Zone> getNeutralZonesWithHighestProduction() {
         List<Zone> result = new ArrayList<>();
         for (Zone z: graph.values()) {
@@ -82,7 +93,6 @@ class Player {
         for (int i = 0; i < zoneCount; i++) {
             int zoneId = in.nextInt(); // this zone's ID (between 0 and zoneCount-1)
             int platinumSource = in.nextInt(); // the amount of Platinum this zone can provide per game turn
-            System.err.println(zoneId + " " + platinumSource);
             board.addZone(new Zone(zoneId, platinumSource));
         }
         for (int i = 0; i < linkCount; i++) {
@@ -91,6 +101,7 @@ class Player {
             board.addLink(zone1, zone2);
         }
 
+        int row = 1;
         while (true) {
             int myPlatinum = in.nextInt();
             for (int i = 0; i < zoneCount; i++) {
@@ -123,10 +134,9 @@ class Player {
                 }
                 for (int i=0; i<numPods; i++) {
                     if (neutralAndEnemiesNeighbours.size() > 0) {
-//                        The list should be sorted
-                        Zone target = neutralAndEnemiesNeighbours.get((int)Math.floor(Math.random()*neutralAndEnemiesNeighbours.size()));
+                        neutralAndEnemiesNeighbours.sort((a,b)->b.platinumSource-a.platinumSource);
+                        Zone target = neutralAndEnemiesNeighbours.remove(0);
                         moves.add("1 " + zone.id + " " + target.id);
-                        neutralAndEnemiesNeighbours.remove(target);
                     }
                 }
             }
@@ -140,30 +150,36 @@ class Player {
             String purchaseCommand = "WAIT";
             List<Zone> neutralZones = board.getNeutralZonesWithHighestProduction();
             List<String> purchases = new ArrayList<>();
-            boolean firstZone = true;
+            int numSpawn = 1;
             while (myPlatinum >= 20) {
-                myPlatinum-=20;
-                int creationZone;
-                if (neutralZones.size() > 0) {
-                    Zone z = neutralZones.remove(0);
-                    creationZone = z.id;
-                }
-                else {
-//                    Bug: If neutral zones are empty, we need to request on our own zones
-                    creationZone = (int)(Math.random()*150);
-                }
                 int quantity = 1;
-                if (firstZone && myPlatinum >= 20) {
-                    quantity = 2;
-                    myPlatinum-=20;
-                    firstZone = false;
+                myPlatinum-=20;
+                Zone creationZone = null;
+                if (row == 1) {
+                    neutralZones.remove(0);
+                    neutralZones.remove(0);
                 }
-                purchases.add(quantity + " " + creationZone);
+                if (neutralZones.size() > 0) {
+                    creationZone = neutralZones.remove(0);
+                }
+                else if (board.getMyZones().size() > 0) {
+                    creationZone = board.getMyZones().get(0);
+                }
+//                Bonus for best zones
+                if (row < 2 && numSpawn < 3 && myPlatinum >= 20) {
+                    quantity+=1;
+                    myPlatinum-=20;
+                }
+                if (creationZone != null) {
+                    purchases.add(quantity + " " + creationZone.id);
+                }
+                numSpawn++;
             }
             if (purchases.size() > 0) {
                 purchaseCommand = String.join(" ", purchases);
             }
             System.out.println(purchaseCommand);
+            row++;
         }
     }
 }
