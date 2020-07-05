@@ -19,7 +19,7 @@ class Zone {
     }
 
     public String toString() {
-        return "Zone " + id;
+        return "Zone " + id + " (" + platinumSource + ")";
     }
 }
 
@@ -57,6 +57,17 @@ class Graph {
         }
         return result;
     }
+
+    List<Zone> getNeutralZonesWithHighestProduction() {
+        List<Zone> result = new ArrayList<>();
+        for (Zone z: graph.values()) {
+            if (z.ownerId == -1) {
+                result.add(z);
+            }
+        }
+        result.sort((a,b)->b.platinumSource-a.platinumSource);
+        return result;
+    }
 }
 
 class Player {
@@ -71,6 +82,7 @@ class Player {
         for (int i = 0; i < zoneCount; i++) {
             int zoneId = in.nextInt(); // this zone's ID (between 0 and zoneCount-1)
             int platinumSource = in.nextInt(); // the amount of Platinum this zone can provide per game turn
+            System.err.println(zoneId + " " + platinumSource);
             board.addZone(new Zone(zoneId, platinumSource));
         }
         for (int i = 0; i < linkCount; i++) {
@@ -80,7 +92,7 @@ class Player {
         }
 
         while (true) {
-            int platinum = in.nextInt(); // my available Platinum
+            int myPlatinum = in.nextInt();
             for (int i = 0; i < zoneCount; i++) {
                 int zId = in.nextInt(); // this zone's ID
                 int ownerId = in.nextInt(); // the player who owns this zone (-1 otherwise)
@@ -90,29 +102,31 @@ class Player {
                 int podsP3 = in.nextInt(); // player 3's PODs on this zone (always 0 for a two or three player game)
                 board.getInstance(zId).set(ownerId, podsP0, podsP1, podsP2, podsP3);
             }
-            // if (zId == myId) {
-            //     System.err.println();
-            // }
 
+//            Moves
             String moveCommand = "WAIT";
             List<String> moves = new ArrayList<>();
             System.err.println("I control " + board.getMyPodZones().size() + " zones");
+            List<Zone> neutralAndEnemiesNeighbours = new ArrayList<>();
+            List<Zone> neutralNeighbours = new ArrayList<>();
             for (Zone zone: board.getMyPodZones()) {
                 int numPods = zone.pods[myId];
                 List<Zone> neighbours = zone.connectedZones;
                 System.err.println("Zone " + zone.id + " is connected to " + neighbours);
-                List<Zone> neutralAndEnemiesNeighbours = new ArrayList<>();
                 for (Zone z: neighbours) {
                     if (z.ownerId != myId) {
                         neutralAndEnemiesNeighbours.add(z);
+                        if (z.ownerId == -1) {
+                            neutralNeighbours.add(z);
+                        }
                     }
                 }
                 for (int i=0; i<numPods; i++) {
                     if (neutralAndEnemiesNeighbours.size() > 0) {
+//                        The list should be sorted
                         Zone target = neutralAndEnemiesNeighbours.get((int)Math.floor(Math.random()*neutralAndEnemiesNeighbours.size()));
                         moves.add("1 " + zone.id + " " + target.id);
                         neutralAndEnemiesNeighbours.remove(target);
-
                     }
                 }
             }
@@ -122,12 +136,29 @@ class Player {
             }
             System.out.println(moveCommand);
 
+//            Purchases
             String purchaseCommand = "WAIT";
+            List<Zone> neutralZones = board.getNeutralZonesWithHighestProduction();
             List<String> purchases = new ArrayList<>();
-            while (platinum >= 20) {
-                platinum-=20;
-                int creationZone = (int)(Math.random()*150);
-                purchases.add("1 " + creationZone);
+            boolean firstZone = true;
+            while (myPlatinum >= 20) {
+                myPlatinum-=20;
+                int creationZone;
+                if (neutralZones.size() > 0) {
+                    Zone z = neutralZones.remove(0);
+                    creationZone = z.id;
+                }
+                else {
+//                    Bug: If neutral zones are empty, we need to request on our own zones
+                    creationZone = (int)(Math.random()*150);
+                }
+                int quantity = 1;
+                if (firstZone && myPlatinum >= 20) {
+                    quantity = 2;
+                    myPlatinum-=20;
+                    firstZone = false;
+                }
+                purchases.add(quantity + " " + creationZone);
             }
             if (purchases.size() > 0) {
                 purchaseCommand = String.join(" ", purchases);
