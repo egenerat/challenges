@@ -5,9 +5,7 @@
     <artifactId>dont-panic</artifactId>
     <packaging>jar</packaging>
     <version>1.0-SNAPSHOT</version>
-    <name>Don't panic
-    </name>
-    <url></url>
+    <name>Don't panic</name>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
