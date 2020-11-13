@@ -1,0 +1,20 @@
+<project>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>io.github.egenerat.challenges</groupId>
+    <artifactId>parent</artifactId>
+    <version>1</version>
+    <packaging>pom</packaging>
+    
+    <modules>
+        <module>algo/graph</module>
+        <module>coders-strike-back</module>
+        <module>dont-panic</module>
+        <module>game-of-drones</module>
+        <!-- <module>kutulu</module> -->
+        <module>last-crusade</module>
+        <module>mars-lander</module>
+        <module>ocean-of-code</module>
+        <module>platinum-rift</module>
+        <module>spring</module>
+    </modules>
+</project>
