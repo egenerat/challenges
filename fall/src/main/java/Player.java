@@ -1,9 +1,13 @@
 import java.io.*;
+import java.util.*;
 
 class Player {
 
     public static void main(String args[]) {
         Scanner in = new Scanner(System.in);
+
+        List<Integer> actionIds = new ArrayList<>();
+        int round = 0;
 
         while (true) {
             int actionCount = in.nextInt(); // the number of spells and recipes in play
@@ -19,9 +23,11 @@ class Player {
                 int taxCount = in.nextInt(); // in the first two leagues: always 0; later: the amount of taxed tier-0 ingredients you gain from learning this spell; For brews, this is how many times you can still gain an urgency bonus
                 boolean castable = in.nextInt() != 0; // in the first league: always 0; later: 1 if this is a castable player spell
                 boolean repeatable = in.nextInt() != 0; // for the first two leagues: always 0; later: 1 if this is a repeatable player spell
+
+                actionIds.add(actionId);
             }
             for (int i = 0; i < 2; i++) {
-                int inv0 = in.nextInt(); // tier-0 ingredients in inventory
+                int inv0 = in.nextInt();
                 int inv1 = in.nextInt();
                 int inv2 = in.nextInt();
                 int inv3 = in.nextInt();
@@ -29,7 +35,8 @@ class Player {
             }
 
             // in the first league: BREW <id> | WAIT; later: BREW <id> | CAST <id> [<times>] | LEARN <id> | REST | WAIT
-            System.out.println("BREW 0");
+            System.out.println("BREW " + actionIds.get(round));
+            round++;
         }
     }
 }
