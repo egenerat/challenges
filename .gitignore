@@ -7,4 +7,6 @@
 *.class
 target/
 
+# Python
 venv
+__pycache__
